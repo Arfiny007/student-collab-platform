@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# build files
+dist/
+.next/
+
+# env
+.env
+
+# logs
+npm-debug.log
+yarn-error.log
+
+# docker
+pgdata/
+
+# OS
+.DS_Store
+Thumbs.db
