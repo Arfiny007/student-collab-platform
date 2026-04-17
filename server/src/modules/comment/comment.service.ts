@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Post } from '../post/post.entity';
 import { NotificationGateway } from '../../notification/notification.gateway';
+import { NotificationService } from '../../notification/notification.service';
 
 @Injectable()
 export class CommentService {
@@ -19,6 +20,8 @@ export class CommentService {
     private postRepo: Repository<Post>,
 
     private notificationGateway: NotificationGateway,
+    private notificationService: NotificationService,
+
   ) {}
 
   async create(content: string, userId: number, postId: number) {
@@ -40,13 +43,19 @@ export class CommentService {
 
   const saved = await this.commentRepo.save(comment);
 
-  // 🔥 SEND NOTIFICATION
-  this.notificationGateway.sendNotification(
-    post.author.id,
-    `New comment on your post: ${content}`,
-  );
 
-  return saved;
+await this.notificationService.create(
+  post.author.id,
+  `New comment: ${content}`,
+);
+
+//  SEND REAL-TIME
+this.notificationGateway.sendNotification(
+  post.author.id,
+  `New comment: ${content}`,
+);
+
+return saved;
 }
 
   findByPost(postId: number) {

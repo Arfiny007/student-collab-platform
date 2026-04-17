@@ -15,11 +15,17 @@ export class NotificationGateway implements OnGatewayConnection {
   @WebSocketServer()
   server!: Server;
 
-  handleConnection(client: Socket) {
-    console.log('User connected:', client.id);
+ handleConnection(client: Socket) {
+  console.log('User connected:', client.id);
+
+  const userId = client.handshake.query.userId as string;
+
+  if (userId) {
+    client.join(`user-${userId}`);
   }
+}
 
   sendNotification(userId: number, message: string) {
-    this.server.emit(`user-${userId}`, message);
-  }
+  this.server.to(`user-${userId}`).emit('notification', message);
+}
 }
