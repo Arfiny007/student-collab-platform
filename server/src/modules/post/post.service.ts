@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from './post.entity';
 import { Repository } from 'typeorm';
@@ -31,4 +31,15 @@ export class PostService {
   findAll() {
     return this.postRepo.find();
   }
+
+  async likePost(id: number) {
+  const post = await this.postRepo.findOne({ where: { id } });
+
+  if (!post) {
+    throw new NotFoundException('Post not found');
+  }
+
+  post.likes += 1;
+  return this.postRepo.save(post);
+}
 }

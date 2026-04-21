@@ -12,6 +12,9 @@ export class Post {
   @Column()
   content: string;
 
+  @Column({ default: 0 })
+  likes: number;
+
   @ManyToOne(() => User, (user) => user.id, { eager: true })
   author: User;
 }

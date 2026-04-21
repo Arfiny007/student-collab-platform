@@ -1,9 +1,9 @@
 "use client";
+
 import { useState, useContext } from "react";
 import API from "../../lib/api";
 import { AuthContext } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
-
 
 export default function Login() {
   const { login } = useContext(AuthContext);
@@ -15,40 +15,66 @@ export default function Login() {
   const handleLogin = async () => {
     try {
       const res = await API.post("/auth/login", { email, password });
-      login(res.data.access_token);
-       const payload = JSON.parse(
-      atob(res.data.access_token.split('.')[1])
-    );
 
-    localStorage.setItem("userId", payload.sub);
+      login(res.data.access_token);
+
+      const payload = JSON.parse(
+        atob(res.data.access_token.split('.')[1])
+      );
+      localStorage.setItem("userId", payload.sub);
+
       router.push("/dashboard");
     } catch (err) {
-      alert("Login failed");
+      alert("Invalid credentials");
     }
   };
-  
 
   return (
-    <div className="h-screen flex items-center justify-center">
-      <div className="p-6 bg-white shadow rounded w-80">
-        <h2 className="text-xl mb-4">Login</h2>
-        <input
-          className="border p-2 w-full mb-2"
-          placeholder="Email"
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          className="border p-2 w-full mb-2"
-          type="password"
-          placeholder="Password"
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          className="bg-blue-500 text-white w-full p-2"
-          onClick={handleLogin}
-        >
-          Login
-        </button>
+    <div className="h-screen grid grid-cols-2">
+      
+      {/* LEFT SIDE */}
+      <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-700 text-white p-10">
+        <h1 className="text-4xl font-bold mb-4">
+          Student Collab 🚀
+        </h1>
+        <p className="text-lg opacity-80 text-center max-w-md">
+          Collaborate, share ideas, and build projects with students worldwide.
+        </p>
+      </div>
+
+      {/* RIGHT SIDE */}
+      <div className="flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-10 rounded-2xl shadow-xl w-[380px]">
+
+          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+            Welcome Back
+          </h2>
+
+          <input
+            className="w-full p-3 mb-4 border rounded-lg bg-black/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Email"
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <input
+            type="password"
+            className="w-full p-3 mb-6 border rounded-lg bg-black/20 placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <button
+            onClick={handleLogin}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+          >
+            Login
+          </button>
+
+          <p className="text-sm text-gray-500 mt-4 text-center">
+            New here? Create an account
+          </p>
+
+        </div>
       </div>
     </div>
   );
