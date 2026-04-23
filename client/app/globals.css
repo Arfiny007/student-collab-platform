@@ -20,9 +20,12 @@
 }
 
 
-
 body {
-  background: #f5f7fb;
-  color: #1f2937;
+  background: #f9fafb;
+  color: #111827;
   font-family: 'Inter', sans-serif;
+}
+
+input {
+  outline: none;
 }

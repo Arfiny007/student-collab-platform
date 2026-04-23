@@ -70,9 +70,17 @@ export default function Login() {
             Login
           </button>
 
+          
+
           <p className="text-sm text-gray-500 mt-4 text-center">
-            New here? Create an account
-          </p>
+  Don’t have an account? 
+  <span
+    onClick={() => router.push("/register")}
+    className="text-blue-600 cursor-pointer ml-1"
+  >
+    Register
+  </span>
+</p>
 
         </div>
       </div>

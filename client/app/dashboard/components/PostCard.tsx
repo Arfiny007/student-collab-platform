@@ -5,16 +5,25 @@ import API from "../../../lib/api";
 import { useState } from "react";
 
 export default function PostCard({ post }: any) {
-  const [likes, setLikes] = useState(post.likes || 0);
+  // ✅ REAL STATE FROM BACKEND
+  const [count, setCount] = useState(post.likeCount || 0);
+  const [liked, setLiked] = useState(post.liked || false);
 
-  const likePost = async () => {
-    await API.patch(`/posts/${post.id}/like`);
-    setLikes((prev: number) => prev + 1);
+  // ✅ REAL TOGGLE FUNCTION
+  const toggleLike = async () => {
+    try {
+      const res = await API.patch(`/posts/${post.id}/toggle-like`);
+
+      setLiked(res.data.liked);
+      setCount(res.data.count);
+    } catch (err) {
+      console.log("Like error");
+    }
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border mb-6">
-      
+    <div className="bg-white p-6 rounded-xl shadow mb-4 border">
+
       <h3 className="text-xl font-semibold text-gray-800 mb-2">
         {post.title}
       </h3>
@@ -27,12 +36,14 @@ export default function PostCard({ post }: any) {
         Posted by {post.author?.email}
       </div>
 
-      {/* 👍 LIKE BUTTON */}
+      {/* ❤️ LIKE BUTTON (ONLY ONE SYSTEM) */}
       <button
-        onClick={likePost}
-        className="text-blue-600 font-medium mb-3"
+        onClick={toggleLike}
+        className={`mb-3 flex items-center gap-2 ${
+          liked ? "text-red-500" : "text-gray-500"
+        }`}
       >
-        👍 {likes} Likes
+        ❤️ {count}
       </button>
 
       <CommentSection postId={post.id} />

@@ -20,7 +20,8 @@ export default function Profile() {
 
       <div className="bg-white p-6 rounded-xl shadow w-[400px]">
         <p><b>Email:</b> {user.email}</p>
-        <p><b>User ID:</b> {user.userId}</p>
+<p><b>Username:</b> {user.username}</p>
+<p><b>Phone:</b> {user.phone}</p>
       </div>
     </div>
   );

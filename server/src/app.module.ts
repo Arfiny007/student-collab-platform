@@ -7,6 +7,7 @@ import { PostModule } from './modules/post/post.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { NotificationGateway } from './notification/notification.gateway';
 import { NotificationModule } from './notification/notification.module';
+import { Like } from 'typeorm';
 
 
 
@@ -18,6 +19,7 @@ import { NotificationModule } from './notification/notification.module';
     PostModule,
     CommentModule,
     NotificationModule,
+    
   ],
   providers: [NotificationGateway],
 })

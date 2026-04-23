@@ -22,6 +22,19 @@ export class UserService {
     return this.userRepo.save(user);
   }
 
+ async register(data: any) {
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+
+  const user = this.userRepo.create({
+    email: data.email,
+    password: hashedPassword, 
+    username: data.username,
+    phone: data.phone,
+  });
+
+  return this.userRepo.save(user);
+}
+
   async findByEmail(email: string) {
     return this.userRepo.findOne({ where: { email } });
   }
