@@ -5,10 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Post } from './post.entity';
 import { User } from '../user/user.entity';
 import { Like } from './like.entity';
-
+console.log("PostModule loaded");
 @Module({
   imports: [TypeOrmModule.forFeature([Post ,User, Like])],
   providers: [PostService],
   controllers: [PostController],
 })
-export class PostModule {}
+export class PostModule {
+  
+}

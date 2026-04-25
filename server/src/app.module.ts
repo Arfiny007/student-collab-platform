@@ -7,20 +7,19 @@ import { PostModule } from './modules/post/post.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { NotificationGateway } from './notification/notification.gateway';
 import { NotificationModule } from './notification/notification.module';
-import { Like } from 'typeorm';
+
 
 
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot(typeOrmConfig),
-    UserModule,
-    AuthModule,
-    PostModule,
-    CommentModule,
-    NotificationModule,
-    
-  ],
-  providers: [NotificationGateway],
+  TypeOrmModule.forRoot(typeOrmConfig),
+  UserModule,
+  AuthModule,
+  PostModule,
+  CommentModule,
+  NotificationModule,
+],
+  providers: [],
 })
 export class AppModule {}

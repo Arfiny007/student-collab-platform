@@ -15,6 +15,9 @@ export class Post {
   @Column({ default: 0 })
   likes: number;
 
-  @ManyToOne(() => User, (user) => user.id, { eager: true })
+  @Column({ nullable: true })
+  image: string;
+
+  @ManyToOne(() => User, { eager: true })
   author: User;
 }

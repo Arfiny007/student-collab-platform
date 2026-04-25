@@ -3,99 +3,54 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import API from "../../../lib/api";
-import toast from "react-hot-toast";
 
 export default function NotificationBell() {
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<string[]>([]);
 
   useEffect(() => {
-  const userId = localStorage.getItem("userId");
+    const userId = localStorage.getItem("userId");
 
-  let socket: any;
+    // ✅ LOAD OLD NOTIFICATIONS (VERY IMPORTANT)
+    const loadNotifications = async () => {
+      try {
+        const res = await API.get("/notifications");
 
-  // ✅ Load existing notifications
-  API.get("/notifications")
-    .then((res) => {
-      setNotifications(res.data);
-    })
-    .catch(() => console.log("Failed to load"));
-
-  // ✅ Connect socket
-  socket = io("http://localhost:5000", {
-    query: { userId },
-  });
-
-  socket.on("notification", (msg: string) => {
-    const newNotif = {
-      id: Date.now(),
-      message: msg,
-      isRead: false,
+        const oldMessages = res.data.map((n: any) => n.message);
+        setMessages(oldMessages);
+      } catch (err) {
+        console.error("Failed to load notifications");
+      }
     };
 
-    setNotifications((prev) => [newNotif, ...prev]);
-    toast.success(msg);
-  });
+    loadNotifications();
 
-  return () => {
-    if (socket) socket.disconnect();
-  };
-}, []);
+    // ✅ REALTIME SOCKET
+    const socket = io("http://localhost:5000", {
+      query: { userId },
+    });
 
-const markAsRead = async (id: number) => {
-  await API.patch(`/notifications/${id}/read`);
+    socket.on("notification", (msg: string) => {
+      setMessages((prev) => [msg, ...prev]);
+    });
 
-  setNotifications((prev) =>
-    prev.map((n) =>
-      n.id === id ? { ...n, isRead: true } : n
-    )
-  );
-};
-
-const unreadCount = notifications.filter((n) => !n.isRead).length;
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
-  <div className="relative">
-    
-    {/* Bell */}
-    <div
-      onClick={() => setOpen(!open)}
-      className="cursor-pointer text-xl relative"
-    >
-      🔔
+    <div className="fixed top-5 right-5 bg-white shadow-lg p-4 rounded-xl w-72">
+      <h3 className="font-bold mb-2">🔔 Notifications</h3>
 
-      {/* Unread count */}
-      {unreadCount > 0 && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 rounded-full">
-          {unreadCount}
-        </span>
+      {messages.length === 0 && (
+        <p className="text-gray-400 text-sm">No notifications</p>
       )}
+
+      {messages.map((msg, index) => (
+        <p key={index} className="text-sm border-b py-1">
+          {msg}
+        </p>
+      ))}
     </div>
-
-    {/* Dropdown */}
-    {open && (
-      <div className="absolute right-0 mt-3 w-72 bg-white shadow-lg rounded-xl p-4 border z-50">
-        <h4 className="font-semibold mb-2">Notifications</h4>
-
-        {notifications.length === 0 && (
-          <p className="text-sm text-gray-500">No notifications</p>
-        )}
-
-        {notifications.map((n) => (
-          <div
-            key={n.id}
-            onClick={() => markAsRead(n.id)}
-            className={`text-sm border-b py-2 cursor-pointer ${
-              n.isRead
-                ? "text-gray-400"
-                : "text-gray-800 font-medium"
-            }`}
-          >
-            {n.message}
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-);
+  );
 }

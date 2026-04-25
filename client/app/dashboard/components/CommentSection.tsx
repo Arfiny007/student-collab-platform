@@ -6,6 +6,7 @@ import API from "../../../lib/api";
 export default function CommentSection({ postId }: any) {
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
+  
 
   const loadComments = async () => {
     const res = await API.get(`/comments/${postId}`);
@@ -17,22 +18,29 @@ export default function CommentSection({ postId }: any) {
   }, []);
 
   const addComment = async () => {
-    await API.post("/comments", {
-      content: text,
-      postId,
-    });
-    setText("");
-    loadComments();
-  };
+  if (!text.trim()) {
+    alert("Comment cannot be empty");
+    return;
+  }
+
+  await API.post("/comments", {
+    content: text,
+    postId: postId, // ✅ explicit
+  });
+
+  setText("");
+  loadComments();
+};
 
   return (
     <div className="mt-4">
       <h4 className="font-semibold mb-2">Comments</h4>
 
       {comments.map((c: any) => (
-        <div key={c.id} className="text-sm mb-2 text-gray-700">
-          <b>{c.author?.email}</b>: {c.content}
-        </div>
+        <div key={c.id} className="bg-gray-100 p-2 rounded mb-2">
+  <p className="text-xs text-gray-500">{c.author?.email}</p>
+  <p className="text-sm text-gray-800">{c.content}</p>
+</div>
       ))}
 
       <div className="flex gap-2 mt-2">

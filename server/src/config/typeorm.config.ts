@@ -1,13 +1,16 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { join } from 'path';
 
-
-  export const typeOrmConfig: TypeOrmModuleOptions = {
+export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
-  host: 'db', 
+  host: 'db',
   port: 5432,
   username: 'postgres',
   password: 'postgres',
   database: 'student_collab',
-  autoLoadEntities: true,
+
   synchronize: true,
+
+  // ✅ SAFE + DOCKER FRIENDLY
+  entities: [join(__dirname, '/../**/*.entity.{js,ts}')],
 };

@@ -24,7 +24,14 @@ export class CommentService {
 
   ) {}
 
-  async create(content: string, userId: number, postId: number) {
+  async create(body: any, userId: number, postId: number) {
+  if (!body.content || body.content.trim() === '') {
+  throw new Error('Comment content is required');
+}
+
+if (!postId) {
+  throw new Error('Post ID is required');
+}
   const user = await this.userRepo.findOne({ where: { id: userId } });
   const post = await this.postRepo.findOne({
     where: { id: postId },
@@ -36,26 +43,25 @@ export class CommentService {
   }
 
   const comment = this.commentRepo.create({
-    content,
+    content: body.content,
     author: user,
-    post: post,
+    post,
   });
 
-  const saved = await this.commentRepo.save(comment);
+  const savedComment = await this.commentRepo.save(comment);
 
+  // ✅ SAVE NOTIFICATION
+  await this.notificationService.create(
+    post.author.id,
+    `${user.email} commented: ${body.content}`
+  );
 
-await this.notificationService.create(
-  post.author.id,
-  `New comment: ${content}`,
-);
+  // ✅ REALTIME NOTIFICATION
+  this.notificationGateway.server
+    .to(`user-${post.author.id}`)
+    .emit('notification', `${user.email} commented on your post`);
 
-//  SEND REAL-TIME
-this.notificationGateway.sendNotification(
-  post.author.id,
-  `New comment: ${content}`,
-);
-
-return saved;
+  return savedComment;
 }
 
   findByPost(postId: number) {

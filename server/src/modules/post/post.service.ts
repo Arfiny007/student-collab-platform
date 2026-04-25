@@ -16,17 +16,20 @@ export class PostService {
     private likeRepo: Repository<Like>,
   ) {}
 
- async create(title: string, content: string, userId: number) {
+ async create(
+  body: any,
+  userId: number,
+  file?: Express.Multer.File,
+) {
   const user = await this.userRepo.findOne({ where: { id: userId } });
 
-  if (!user) {
-    throw new Error('User not found');
-  }
+  if (!user) throw new NotFoundException();
 
   const post = this.postRepo.create({
-    title,
-    content,
+    title: body.title,
+    content: body.content,
     author: user,
+    image: file ? file.filename : undefined,
   });
 
   return this.postRepo.save(post);

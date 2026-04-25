@@ -6,16 +6,30 @@ import API from "../../../lib/api";
 export default function CreatePostModal({ onClose, refresh }: any) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [file, setFile] = useState<any>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+ 
 
   const handleCreate = async () => {
-    try {
-      await API.post("/posts", { title, content });
-      refresh();
-      onClose();
-    } catch {
-      alert("Failed to create post");
-    }
-  };
+  const formData = new FormData();
+
+  formData.append("title", title);
+  formData.append("content", content);
+
+  if (file) {
+    formData.append("image", file);
+  }
+
+  await API.post("/posts", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  refresh();
+  onClose();
+};
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
@@ -33,6 +47,25 @@ export default function CreatePostModal({ onClose, refresh }: any) {
           placeholder="Content"
           onChange={(e) => setContent(e.target.value)}
         />
+        <input
+  type="file"
+  onChange={(e) => {
+    const selectedFile = e.target.files?.[0];
+    setFile(selectedFile);
+
+    if (selectedFile) {
+      setPreview(URL.createObjectURL(selectedFile));
+    }
+  }}
+/>
+{preview && (
+  <img
+    src={preview}
+    className="w-full rounded-lg mt-3"
+  />
+)}
+
+        
 
         <div className="flex justify-end gap-2">
           <button onClick={onClose}>Cancel</button>

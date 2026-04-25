@@ -16,13 +16,13 @@ export class NotificationGateway implements OnGatewayConnection {
   server!: Server;
 
  handleConnection(client: Socket) {
-  console.log('User connected:', client.id);
-
-  const userId = client.handshake.query.userId as string;
+  const userId = client.handshake.query.userId;
 
   if (userId) {
     client.join(`user-${userId}`);
   }
+
+  console.log('User connected:', client.id);
 }
 
   sendNotification(userId: number, message: string) {
