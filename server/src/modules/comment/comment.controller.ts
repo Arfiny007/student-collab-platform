@@ -14,7 +14,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 export class CommentController {
   constructor(private commentService: CommentService) {}
 
-  @HttpPost()
+@HttpPost()
 @UseGuards(JwtAuthGuard)
 create(@Body() body: any, @Req() req) {
   return this.commentService.create(

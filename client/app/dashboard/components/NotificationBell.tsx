@@ -10,7 +10,6 @@ export default function NotificationBell() {
   useEffect(() => {
     const userId = localStorage.getItem("userId");
 
-    // ✅ LOAD OLD NOTIFICATIONS (VERY IMPORTANT)
     const loadNotifications = async () => {
       try {
         const res = await API.get("/notifications");

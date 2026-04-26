@@ -1,28 +1,40 @@
 "use client";
 
-import { createContext, useState } from "react";
-import { setToken } from "../lib/api";
+import { createContext, useState, useEffect } from "react";
 
+type AuthType = {
+  token: string | null;
+  login: (token: string) => void;
+  logout: () => void;
+};
 
-type UserType = {
-  token: string;
-} | null;
+export const AuthContext = createContext<AuthType>({
+  token: null,
+  login: () => {},
+  logout: () => {},
+});
 
-export const AuthContext = createContext<any>(null);
+export function AuthProvider({ children }: any) {
+  const [token, setTokenState] = useState<string | null>(null);
 
-export default function AuthProvider({ children }: any) {
-  const [user, setUser] = useState<UserType>(null);
+  useEffect(() => {
+    const stored = localStorage.getItem("token");
+    if (stored) setTokenState(stored);
+  }, []);
 
   const login = (token: string) => {
     localStorage.setItem("token", token);
-    setToken(token);
+    setTokenState(token);
+  };
 
-    
-    setUser({ token });
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    setTokenState(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login }}>
+    <AuthContext.Provider value={{ token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

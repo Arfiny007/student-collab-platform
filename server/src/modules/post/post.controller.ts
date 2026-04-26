@@ -45,7 +45,11 @@ getAll(@Req() req) {
 
 @HttpPost()
 @UseGuards(JwtAuthGuard)
-@UseInterceptors(FileInterceptor('image', { dest: './uploads' }))
+@UseInterceptors(
+  FileInterceptor('file', {
+    dest: './uploads',
+  }),
+)
 create(
   @UploadedFile() file: Express.Multer.File,
   @Body() body: any,
@@ -53,4 +57,12 @@ create(
 ) {
   return this.postService.create(body, req.user.userId, file);
 }
+
+@UseGuards(JwtAuthGuard)
+@Post('vote/:id')
+vote(@Param('id') id: string, @Req() req) {
+  return this.postService.vote(Number(id), req.user.userId);
+}
+
+
 }

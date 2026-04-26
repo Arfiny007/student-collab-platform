@@ -9,7 +9,7 @@ import { NotificationController } from './notification.controller';
 @Module({
   imports: [TypeOrmModule.forFeature([Notification, User])],
   providers: [NotificationGateway, NotificationService],
-  exports: [NotificationGateway, NotificationService],
+  exports: [NotificationGateway, NotificationService,],
   controllers: [NotificationController],
 })
 export class NotificationModule {}
