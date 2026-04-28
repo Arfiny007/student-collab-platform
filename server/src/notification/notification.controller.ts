@@ -17,4 +17,5 @@ export class NotificationController {
 markRead(@Param('id') id: string) {
   return this.notificationService.markAsRead(Number(id));
 }
+
 }

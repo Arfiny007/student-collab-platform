@@ -10,6 +10,7 @@ import {
   UploadedFile,
   UseInterceptors,
   Post,
+  Query,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -37,11 +38,7 @@ toggleLike(@Param('id') id: string, @Req() req) {
   );
 }
 
-@UseGuards(JwtAuthGuard)
-@Get()
-getAll(@Req() req) {
-  return this.postService.findAll(req.user.userId);
-}
+
 
 @HttpPost()
 @UseGuards(JwtAuthGuard)
@@ -62,6 +59,12 @@ create(
 @Post('vote/:id')
 vote(@Param('id') id: string, @Req() req) {
   return this.postService.vote(Number(id), req.user.userId);
+}
+
+@Get()
+@UseGuards(JwtAuthGuard)
+getAll(@Req() req, @Query('page') page = 1) {
+  return this.postService.findAll(req.user.userId, Number(page));
 }
 
 

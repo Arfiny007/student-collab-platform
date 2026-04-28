@@ -7,6 +7,7 @@ import { PostModule } from './modules/post/post.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { NotificationGateway } from './notification/notification.gateway';
 import { NotificationModule } from './notification/notification.module';
+import { FollowModule } from './modules/user/follow/follow.module';
 
 
 
@@ -19,6 +20,8 @@ import { NotificationModule } from './notification/notification.module';
   PostModule,
   CommentModule,
   NotificationModule,
+  FollowModule, 
+
 ],
   providers: [],
 })

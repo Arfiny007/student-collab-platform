@@ -36,67 +36,69 @@ export default function CreatePostModal({ onClose, refresh }: any) {
       return;
     }
 
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("content", content);
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("content", content);
 
-    if (file) {
-      formData.append("file", file);
+      if (file) {
+        formData.append("file", file);
+      }
+
+      const validOptions = options.filter((opt) => opt.trim() !== "");
+
+      if (validOptions.length >= 2) {
+        formData.append("options", JSON.stringify(validOptions));
+      }
+
+      // ✅ CORRECT API CALL
+      const res = await API.post("/posts", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // ✅ ADD NEW POST TO FEED (INSTANT UX)
+      refresh(res.data);
+
+      onClose();
+    } catch (err) {
+      console.error("Post failed");
+    } finally {
+      setLoading(false);
     }
-
-    const validOptions = options.filter((opt) => opt.trim() !== "");
-
-    if (validOptions.length >= 2) {
-      formData.append("options", JSON.stringify(validOptions));
-    }
-
-    await API.post("/posts", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    setLoading(false);
-    refresh();
-    onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
-      <div className="bg-white rounded-2xl w-[450px] p-6 shadow-2xl animate-fadeIn">
+      <div className="bg-white rounded-2xl w-[450px] p-6 shadow-2xl">
 
-        {/* HEADER */}
         <h2 className="text-2xl font-bold mb-4 text-gray-800">
           ✨ Create Post
         </h2>
 
-        {/* TITLE */}
         <input
-          className="w-full border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 p-2 mb-3 rounded-lg outline-none"
+          className="w-full border p-2 mb-3 rounded"
           placeholder="Post title..."
           onChange={(e) => setTitle(e.target.value)}
         />
 
-        {/* CONTENT */}
         <textarea
-          className="w-full border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 p-2 mb-4 rounded-lg outline-none"
+          className="w-full border p-2 mb-4 rounded"
           placeholder="What's on your mind?"
-          rows={3}
           onChange={(e) => setContent(e.target.value)}
         />
 
-        {/* 📊 POLL SECTION */}
+        {/* POLL */}
         <div className="mb-4">
-          <h3 className="font-semibold text-gray-700 mb-2">
-            📊 Add Poll (optional)
-          </h3>
+          <h3 className="font-semibold mb-2">📊 Poll</h3>
 
           {options.map((opt, i) => (
             <input
               key={i}
-              className="w-full border border-gray-200 focus:border-blue-500 p-2 mb-2 rounded-lg"
+              className="w-full border p-2 mb-2"
               placeholder={`Option ${i + 1}`}
               onChange={(e) => {
                 const newOptions = [...options];
@@ -106,57 +108,29 @@ export default function CreatePostModal({ onClose, refresh }: any) {
             />
           ))}
 
-          <button
-            onClick={addOption}
-            className="text-blue-600 text-sm hover:underline"
-          >
+          <button onClick={addOption} className="text-blue-500 text-sm">
             + Add option
           </button>
         </div>
 
-        {/* 📁 FILE UPLOAD */}
-        <div className="mb-4">
-          <label className="block border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-blue-400 transition">
-            <input
-              type="file"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+        {/* FILE */}
+        <input type="file" onChange={handleFileChange} />
 
-            <p className="text-gray-500 text-sm">
-              📎 Click to upload image or file
-            </p>
-          </label>
+        {preview && (
+          <img src={preview} className="w-full mt-3 rounded" />
+        )}
 
-          {/* IMAGE PREVIEW */}
-          {preview && (
-            <img
-              src={preview}
-              className="w-full rounded-xl mt-3 shadow"
-            />
-          )}
+        {!preview && fileName && (
+          <p className="mt-2 text-sm">📄 {fileName}</p>
+        )}
 
-          {/* FILE NAME */}
-          {!preview && fileName && (
-            <p className="mt-2 text-sm text-gray-600">
-              📄 {fileName}
-            </p>
-          )}
-        </div>
-
-        {/* ACTIONS */}
-        <div className="flex justify-end gap-3 mt-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100"
-          >
-            Cancel
-          </button>
+        <div className="flex justify-end gap-2 mt-4">
+          <button onClick={onClose}>Cancel</button>
 
           <button
             disabled={loading}
             onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition disabled:opacity-50"
+            className="bg-blue-600 text-white px-4 py-2 rounded"
           >
             {loading ? "Posting..." : "Post 🚀"}
           </button>

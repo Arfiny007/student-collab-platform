@@ -7,9 +7,9 @@ import { User } from '../user/user.entity';
 import { Like } from './like.entity';
 import { Poll } from './poll.entity';
 import { Vote } from './vote.entity';
-
+import { Follow } from '../user/follow/follow.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, User, Like, Poll, Vote])],
+  imports: [TypeOrmModule.forFeature([Post, User, Like, Poll, Vote, Follow])],
   providers: [PostService],
   controllers: [PostController],
 })

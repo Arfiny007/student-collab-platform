@@ -6,6 +6,7 @@ import { User } from '../user/user.entity';
 import { Like } from './like.entity';
 import { Poll } from './poll.entity';
 import { Vote } from './vote.entity';
+import { Follow } from '../user/follow/follow.entity';
 
 @Injectable()
 export class PostService {
@@ -24,6 +25,8 @@ export class PostService {
 
     @InjectRepository(Like)
     private likeRepo: Repository<Like>,
+    @InjectRepository(Follow)
+    private followRepo: Repository<Follow>,
   ) {}
 
   // ✅ CREATE POST + POLL
@@ -126,14 +129,21 @@ export class PostService {
 }
 
   // ✅ GET POSTS
-  async findAll(userId: number) {
+async findAll(userId: number, page: number = 1) {
+  const limit = 5;
+  const skip = (page - 1) * limit;
+
   const posts = await this.postRepo.find({
     relations: ['author', 'polls'],
+    take: limit,
+    skip: skip,
+    order: { id: 'DESC' },
   });
 
   return Promise.all(
     posts.map(async (post) => {
-      const count = await this.likeRepo.count({
+      // 👍 like count
+      const likeCount = await this.likeRepo.count({
         where: { post: { id: post.id } },
       });
 
@@ -144,20 +154,19 @@ export class PostService {
         },
       });
 
-      // 🔥 find user vote
-      const vote = await this.voteRepo.findOne({
+      // 🔥 FOLLOW CHECK (IMPORTANT)
+      const isFollowing = await this.followRepo.findOne({
         where: {
-          user: { id: userId },
-          poll: { post: { id: post.id } },
+          follower: { id: userId },
+          following: { id: post.author.id },
         },
-        relations: ['poll'],
       });
 
       return {
         ...post,
-        likeCount: count,
+        likeCount,
         liked: !!liked,
-        userVote: vote?.poll?.id || null,
+        isFollowing: !!isFollowing, // ✅ THIS IS THE KEY
       };
     }),
   );
