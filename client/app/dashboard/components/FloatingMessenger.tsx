@@ -69,9 +69,37 @@ export default function FloatingMessenger() {
         );
 
     window.addEventListener(
-      "open-chat",
-      openChat,
+  "open-chat",
+  async () => {
+    const saved =
+      localStorage.getItem(
+        "chatUser",
+      );
+
+    if (!saved)
+      return;
+
+    const user =
+      JSON.parse(
+        saved,
+      );
+
+    setChatUser(
+      user,
     );
+
+    const res =
+      await API.get(
+        `/chat/${user.id}`,
+      );
+
+    setMessages(
+      res.data,
+    );
+
+    setOpen(true);
+  },
+);
 
     return () =>
       window.removeEventListener(

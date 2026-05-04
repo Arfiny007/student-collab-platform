@@ -36,7 +36,8 @@ export class ChatService {
   async send(
     senderId: number,
     receiverId: number,
-    text: string,
+    text?: string,
+    file?: Express.Multer.File,
   ) {
     const sender =
       await this.userRepo.findOne({
@@ -65,6 +66,9 @@ export class ChatService {
     message.text =
       text;
 
+    message.file =
+      file?.filename;
+
     message.sender =
       sender;
 
@@ -84,56 +88,139 @@ export class ChatService {
     return saved;
   }
 
+  async edit(
+    id: number,
+    text: string,
+  ) {
+    const msg =
+      await this.messageRepo.findOne({
+        where: {
+          id,
+        },
+      });
+
+    if (
+      !msg
+    )
+      return;
+
+    msg.text =
+      text;
+
+    msg.edited =
+      true;
+
+    return this.messageRepo.save(
+      msg,
+    );
+  }
+
+  async remove(
+    id: number,
+  ) {
+    const msg =
+      await this.messageRepo.findOne({
+        where: {
+          id,
+        },
+      });
+
+    if (
+      !msg
+    )
+      return;
+
+    msg.deleted =
+      true;
+
+    msg.text =
+      "Message deleted";
+
+    return this.messageRepo.save(
+      msg,
+    );
+  }
+
   async getConversation(
     userId: number,
     otherId: number,
   ) {
-    const messages =
-      await this.messageRepo
-        .createQueryBuilder(
-          "message",
-        )
-        .leftJoinAndSelect(
-          "message.sender",
-          "sender",
-        )
-        .leftJoinAndSelect(
-          "message.receiver",
-          "receiver",
-        )
-        .where(
-          `
+    return this.messageRepo
+      .createQueryBuilder(
+        "message",
+      )
+      .leftJoinAndSelect(
+        "message.sender",
+        "sender",
+      )
+      .leftJoinAndSelect(
+        "message.receiver",
+        "receiver",
+      )
+      .where(
+        `
 (sender.id = :userId AND receiver.id = :otherId)
 OR
 (sender.id = :otherId AND receiver.id = :userId)
 `,
-          {
-            userId,
-            otherId,
-          },
-        )
-        .orderBy(
-          "message.id",
-          "ASC",
-        )
-        .getMany();
+        {
+          userId,
+          otherId,
+        },
+      )
+      .orderBy(
+        "message.id",
+        "ASC",
+      )
+      .getMany();
+  }
+
+  async getRecentChats(
+    userId: number,
+  ) {
+    const messages =
+      await this.messageRepo.find({
+        relations: [
+          "sender",
+          "receiver",
+        ],
+        order: {
+          id: "DESC",
+        },
+      });
+
+    const unique =
+      new Map();
 
     for (
       const m of messages
     ) {
-      if (
-        m.receiver.id ===
+      const other =
+        m.sender.id ===
         userId
-      ) {
-        m.seen =
-          true;
+          ? m.receiver
+          : m.sender;
 
-        await this.messageRepo.save(
-          m,
+      if (
+        !unique.has(
+          other.id,
+        )
+      ) {
+        unique.set(
+          other.id,
+          {
+            user:
+              other,
+            lastMessage:
+              m.text ||
+              "📎 file",
+          },
         );
       }
     }
 
-    return messages;
+    return Array.from(
+      unique.values(),
+    );
   }
 }

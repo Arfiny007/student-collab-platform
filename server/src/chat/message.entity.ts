@@ -13,13 +13,30 @@ export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  text: string;
+  @Column({
+    nullable: true,
+  })
+  text?: string;
+
+  @Column({
+    nullable: true,
+  })
+  file?: string;
 
   @Column({
     default: false,
   })
   seen: boolean;
+
+  @Column({
+    default: false,
+  })
+  edited: boolean;
+
+  @Column({
+    default: false,
+  })
+  deleted: boolean;
 
   @ManyToOne(
     () => User,
