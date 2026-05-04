@@ -93,9 +93,21 @@ useEffect(() => {
       <h1 className="text-xl font-bold text-gray-800">
         Student Collab 🚀
       </h1>
-
+      
       {/* 🔔 NOTIFICATION BELL */}
       <div className="relative">
+        <button
+  onClick={() =>
+    window.dispatchEvent(
+      new Event(
+        "open-chat",
+      ),
+    )
+  }
+  className="text-2xl mr-4"
+>
+  💬
+</button>
         <button
           onClick={() => setOpen(!open)}
           className="relative text-2xl"

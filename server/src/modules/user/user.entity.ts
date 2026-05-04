@@ -1,4 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+} from 'typeorm';
 
 @Entity()
 export class User {
@@ -17,6 +21,35 @@ export class User {
   @Column()
   username: string;
 
-@Column({ nullable: true })
+  @Column({ nullable: true })
   phone: string;
+
+  // NEW PROFILE FIELDS
+
+  @Column({ nullable: true })
+  avatar?: string;
+
+  @Column({ nullable: true })
+  bio?: string;
+
+  @Column({ nullable: true })
+  university?: string;
+
+  @Column({ nullable: true })
+  department?: string;
+
+  @Column({ nullable: true })
+  location?: string;
+
+  @Column({ nullable: true })
+  github?: string;
+
+  @Column({ nullable: true })
+  linkedin?: string;
+
+  @Column({ nullable: true })
+  portfolio?: string;
+
+  @Column({ nullable: true })
+  skills?: string;
 }

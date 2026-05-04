@@ -8,6 +8,7 @@ import { CommentModule } from './modules/comment/comment.module';
 import { NotificationGateway } from './notification/notification.gateway';
 import { NotificationModule } from './notification/notification.module';
 import { FollowModule } from './modules/user/follow/follow.module';
+import { ChatModule } from "./chat/chat.module";
 
 
 
@@ -21,6 +22,7 @@ import { FollowModule } from './modules/user/follow/follow.module';
   CommentModule,
   NotificationModule,
   FollowModule, 
+  ChatModule,
 
 ],
   providers: [],

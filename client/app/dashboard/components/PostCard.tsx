@@ -2,184 +2,339 @@
 
 import CommentSection from "./CommentSection";
 import API from "../../../lib/api";
-import { useEffect, useState } from "react";
 
-export default function PostCard({ post }: any) {
-  const [count, setCount] = useState(post.likeCount || 0);
-  const [liked, setLiked] = useState(post.liked || false);
+import {
+  useEffect,
+  useState,
+} from "react";
 
-  const [polls, setPolls] = useState(post.polls || []);
-  const [selected, setSelected] = useState(post.userVote || null);
+import {
+  useRouter,
+} from "next/navigation";
 
-  const [voting, setVoting] = useState(false);
+export default function PostCard({
+  post,
+}: any) {
+  if (!post) return null;
 
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [isFollowing, setIsFollowing] = useState(post.isFollowing || false);
-  console.log("POST OBJECT:", post);
+  const router =
+    useRouter();
 
-  // ✅ FIX: get userId AFTER mount
+  const [count, setCount] =
+    useState(
+      post.likeCount || 0,
+    );
+
+  const [liked, setLiked] =
+    useState(
+      post.liked || false,
+    );
+
+  const [polls, setPolls] =
+    useState(
+      post.polls || [],
+    );
+
+  const [selected, setSelected] =
+    useState(
+      post.userVote ||
+        null,
+    );
+
+  const [voting, setVoting] =
+    useState(
+      false,
+    );
+
+  const [currentUserId, setCurrentUserId] =
+    useState<number | null>(
+      null,
+    );
+
+  const [isFollowing, setIsFollowing] =
+    useState(
+      post.isFollowing ||
+        false,
+    );
+
   useEffect(() => {
-    const id = localStorage.getItem("userId");
-    if (id) setCurrentUserId(Number(id));
+    const id =
+      localStorage.getItem(
+        "userId",
+      );
+
+    if (id) {
+      setCurrentUserId(
+        Number(id),
+      );
+    }
   }, []);
 
-  // ✅ VOTE
-  const votePoll = async (pollId: number) => {
-    if (voting) return;
+  const totalVotes =
+    polls.reduce(
+      (
+        sum: number,
+        p: any,
+      ) =>
+        sum +
+        p.votes,
+      0,
+    );
 
-    try {
-      setVoting(true);
-      const res = await API.post(`/posts/vote/${pollId}`);
-      setPolls(res.data);
-      setSelected(pollId);
-    } catch {
-      console.error("Vote failed");
-    } finally {
-      setVoting(false);
-    }
-  };
+  const votePoll =
+    async (
+      pollId: number,
+    ) => {
+      if (
+        voting
+      )
+        return;
 
-  const totalVotes = polls.reduce(
-    (sum: number, p: any) => sum + p.votes,
-    0
-  );
+      setVoting(
+        true,
+      );
 
-  // ✅ FOLLOW
- const [followingLoading, setFollowingLoading] = useState(false);
+      const res =
+        await API.post(
+          `/posts/vote/${pollId}`,
+        );
 
-const handleFollow = async () => {
-  if (followingLoading) return;
+      setPolls(
+        res.data,
+      );
 
-  try {
-    setFollowingLoading(true);
+      setSelected(
+        pollId,
+      );
 
-    const res = await API.post(`/follow/${post.author.id}`);
-    setIsFollowing(res.data.following);
-  } finally {
-    setFollowingLoading(false);
-  }
-};
+      setVoting(
+        false,
+      );
+    };
 
-  const toggleLike = async () => {
-    const res = await API.patch(`/posts/${post.id}/toggle-like`);
-    setLiked(res.data.liked);
-    setCount(res.data.count);
-  };
+  const handleFollow =
+    async () => {
+      const res =
+        await API.post(
+          `/follow/${post.author.id}`,
+        );
+
+      setIsFollowing(
+        res.data.following,
+      );
+    };
+
+  const toggleLike =
+    async () => {
+      const res =
+        await API.patch(
+          `/posts/${post.id}/toggle-like`,
+        );
+
+      setLiked(
+        res.data.liked,
+      );
+
+      setCount(
+        res.data.count,
+      );
+    };
 
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-5 mb-6 transition hover:shadow-xl">
+    <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 mb-6">
 
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold">
-            {post.author?.email[0].toUpperCase()}
-          </div>
+      <div className="flex justify-between mb-4">
+
+        <div className="flex gap-3 items-center">
+
+          <img
+            src={
+              post.author
+                ?.avatar
+                ? `http://localhost:5000/${post.author.avatar}`
+                : "https://placehold.co/100"
+            }
+            className="w-12 h-12 rounded-full object-cover border-2 border-blue-500 cursor-pointer"
+            onClick={() =>
+              router.push(
+                `/profile/${post.author.id}`,
+              )
+            }
+          />
 
           <div>
-            <p className="font-semibold">{post.author?.email}</p>
-            <p className="text-xs text-gray-400">Just now</p>
+
+            <p
+              onClick={() =>
+                router.push(
+                  `/profile/${post.author.id}`,
+                )
+              }
+              className="font-semibold cursor-pointer hover:text-blue-600"
+            >
+              {post.author
+                ?.username}
+            </p>
+
+            <p className="text-xs text-gray-400">
+              {post.author
+                ?.email}
+            </p>
+
           </div>
+
         </div>
 
-        {/* ✅ FOLLOW BUTTON FIXED */}
-        {typeof window !== "undefined" &&
-  currentUserId &&
-  post?.author?.id &&
-  currentUserId !== post.author.id && (
-    <button
-      onClick={handleFollow}
-      className={`text-sm px-3 py-1 rounded-full transition ${
-        isFollowing
-          ? "bg-gray-200 text-gray-700"
-          : "bg-blue-500 text-white"
-      }`}
-    >
-      {isFollowing ? "Following" : "Follow"}
-    </button>
-)}
+        {post.author
+          ?.id !==
+          currentUserId && (
+          <button
+            onClick={
+              handleFollow
+            }
+            className={`px-4 py-2 rounded-full text-sm ${
+              isFollowing
+                ? "bg-gray-200"
+                : "bg-blue-600 text-white"
+            }`}
+          >
+            {isFollowing
+              ? "Following"
+              : "Follow"}
+          </button>
+        )}
+
       </div>
 
-      {/* TITLE */}
-      <h2 className="text-lg font-bold mb-2">{post.title}</h2>
+      <h2 className="font-bold text-xl mb-2">
+        {post.title}
+      </h2>
 
-      {/* CONTENT */}
-      <p className="text-gray-600 mb-3">{post.content}</p>
+      <p className="text-gray-600 mb-4">
+        {post.content}
+      </p>
 
-      {/* IMAGE */}
       {post.image && (
         <img
           src={`http://localhost:5000/${post.image}`}
-          className="rounded-xl mb-3 w-full"
+          className="rounded-2xl mb-4"
         />
       )}
 
-      {/* FILE */}
       {post.file && (
         <a
           href={`http://localhost:5000/${post.file}`}
           target="_blank"
-          className="text-blue-600 underline"
+          className="text-blue-600"
         >
           📄 Download File
         </a>
       )}
 
       {/* POLL */}
-      {polls.length > 0 && (
-        <div className="mt-4 space-y-3">
-          {polls.map((p: any) => {
-            const percent = totalVotes
-              ? Math.round((p.votes / totalVotes) * 100)
-              : 0;
+      {polls.length >
+        0 && (
+        <div className="space-y-3 mt-4">
 
-            return (
-              <div key={p.id}>
-                <button
-                  disabled={voting}
-                  onClick={() => votePoll(p.id)}
-                  className={`w-full text-left p-2 rounded-lg border transition ${
-                    selected === p.id
-                      ? "bg-blue-100 border-blue-400"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  } ${voting ? "opacity-50 cursor-not-allowed" : ""}`}
+          {polls.map(
+            (
+              p: any,
+            ) => {
+              const percent =
+                totalVotes
+                  ? Math.round(
+                      (p.votes /
+                        totalVotes) *
+                        100,
+                    )
+                  : 0;
+
+              return (
+                <div
+                  key={
+                    p.id
+                  }
                 >
-                  {p.option}
-                </button>
 
-                <div className="w-full bg-gray-200 h-2 rounded mt-1 overflow-hidden">
-                  <div
-                    className="bg-blue-500 h-2 rounded transition-all duration-500"
-                    style={{ width: `${percent}%` }}
-                  />
+                  <button
+                    onClick={() =>
+                      votePoll(
+                        p.id,
+                      )
+                    }
+                    disabled={
+                      voting
+                    }
+                    className={`w-full p-3 rounded-xl text-left ${
+                      selected ===
+                      p.id
+                        ? "bg-blue-100"
+                        : "bg-gray-100"
+                    }`}
+                  >
+                    {
+                      p.option
+                    }
+                  </button>
+
+                  <div className="h-2 bg-gray-200 rounded mt-1 overflow-hidden">
+
+                    <div
+                      className="h-2 bg-blue-500 transition-all duration-700"
+                      style={{
+                        width: `${percent}%`,
+                      }}
+                    />
+
+                  </div>
+
+                  <p className="text-xs text-gray-500 mt-1">
+                    {
+                      percent
+                    }
+                    % (
+                    {
+                      p.votes
+                    }{" "}
+                    votes)
+                  </p>
+
                 </div>
+              );
+            },
+          )}
 
-                <p className="text-xs text-gray-500">
-                  {percent}% ({p.votes} votes)
-                </p>
-              </div>
-            );
-          })}
         </div>
       )}
 
-      {/* ACTIONS */}
-      <div className="flex justify-between mt-4 border-t pt-3">
+      {/* ACTION */}
+      <div className="flex justify-between mt-5 border-t pt-4">
+
         <button
-          onClick={toggleLike}
-          className={`transition ${
-            liked ? "text-red-500" : "text-gray-500 hover:text-red-400"
+          onClick={
+            toggleLike
+          }
+          className={`${
+            liked
+              ? "text-red-500"
+              : ""
           }`}
         >
-          ❤️ {count}
+          ❤️{" "}
+          {
+            count
+          }
         </button>
 
-        <span className="text-sm text-gray-400">
-          Comments
-        </span>
       </div>
 
-      <CommentSection postId={post.id} />
+      <CommentSection
+        postId={
+          post.id
+        }
+      />
+
     </div>
   );
 }

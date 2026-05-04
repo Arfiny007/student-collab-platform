@@ -72,4 +72,19 @@ export class FollowService {
 
     return { following: true };
   }
+  async getFollowers(userId: number) {
+  return this.followRepo.find({
+    where: {
+      following: { id: userId },
+    },
+  });
+}
+
+async getFollowing(userId: number) {
+  return this.followRepo.find({
+    where: {
+      follower: { id: userId },
+    },
+  });
+}
 }

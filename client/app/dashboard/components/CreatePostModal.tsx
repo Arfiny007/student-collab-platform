@@ -3,139 +3,250 @@
 import { useState } from "react";
 import API from "../../../lib/api";
 
-export default function CreatePostModal({ onClose, refresh }: any) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [file, setFile] = useState<any>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string>("");
-  const [options, setOptions] = useState<string[]>(["", ""]);
-  const [loading, setLoading] = useState(false);
+export default function CreatePostModal({
+  onClose,
+  refresh,
+}: any) {
+  const [title, setTitle] =
+    useState("");
 
-  const addOption = () => {
-    setOptions([...options, ""]);
-  };
+  const [content, setContent] =
+    useState("");
 
-  const handleFileChange = (e: any) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
+  const [file, setFile] =
+    useState<any>(null);
 
-    setFile(selectedFile);
-    setFileName(selectedFile.name);
+  const [preview, setPreview] =
+    useState<string | null>(
+      null,
+    );
 
-    if (selectedFile.type.startsWith("image")) {
-      setPreview(URL.createObjectURL(selectedFile));
+  const [fileName, setFileName] =
+    useState("");
+
+  const [options, setOptions] =
+    useState<string[]>([
+      "",
+      "",
+    ]);
+
+  const addOption =
+    () => {
+      setOptions([
+        ...options,
+        "",
+      ]);
+    };
+
+  const handleFileChange = (
+    e: any,
+  ) => {
+    const selected =
+      e.target.files?.[0];
+
+    if (!selected) return;
+
+    setFile(selected);
+
+    setFileName(
+      selected.name,
+    );
+
+    if (
+      selected.type.startsWith(
+        "image",
+      )
+    ) {
+      setPreview(
+        URL.createObjectURL(
+          selected,
+        ),
+      );
     } else {
-      setPreview(null);
+      setPreview(
+        null,
+      );
     }
   };
 
-  const handleCreate = async () => {
-    if (!title && !content) {
-      alert("Post cannot be empty");
-      return;
-    }
+  const handleCreate =
+    async () => {
+      const formData =
+        new FormData();
 
-    try {
-      setLoading(true);
+      formData.append(
+        "title",
+        title,
+      );
 
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("content", content);
+      formData.append(
+        "content",
+        content,
+      );
 
       if (file) {
-        formData.append("file", file);
+        formData.append(
+          "file",
+          file,
+        );
       }
 
-      const validOptions = options.filter((opt) => opt.trim() !== "");
+      const cleanOptions =
+        options.filter(
+          (o) =>
+            o.trim() !== "",
+        );
 
-      if (validOptions.length >= 2) {
-        formData.append("options", JSON.stringify(validOptions));
+      if (
+        cleanOptions.length >
+        0
+      ) {
+        formData.append(
+          "options",
+          JSON.stringify(
+            cleanOptions,
+          ),
+        );
       }
 
-      // ✅ CORRECT API CALL
-      const res = await API.post("/posts", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // 🔥 IMPORTANT
+      const res =
+        await API.post(
+          "/posts",
+          formData,
+        );
 
-      // ✅ ADD NEW POST TO FEED (INSTANT UX)
-      refresh(res.data);
+      // 🔥 IMPORTANT
+      refresh(
+        res.data,
+      );
 
       onClose();
-    } catch (err) {
-      console.error("Post failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
-      <div className="bg-white rounded-2xl w-[450px] p-6 shadow-2xl">
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
 
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">
-          ✨ Create Post
+      <div className="bg-white rounded-3xl p-6 w-[500px] shadow-2xl">
+
+        <h2 className="text-2xl font-bold mb-4">
+          Create Post
         </h2>
 
         <input
-          className="w-full border p-2 mb-3 rounded"
-          placeholder="Post title..."
-          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          className="w-full border p-3 rounded-xl mb-3"
+          onChange={(e) =>
+            setTitle(
+              e.target.value,
+            )
+          }
         />
 
         <textarea
-          className="w-full border p-2 mb-4 rounded"
-          placeholder="What's on your mind?"
-          onChange={(e) => setContent(e.target.value)}
+          placeholder="Content"
+          className="w-full border p-3 rounded-xl mb-4"
+          onChange={(e) =>
+            setContent(
+              e.target.value,
+            )
+          }
         />
 
-        {/* POLL */}
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2">📊 Poll</h3>
+        <h3 className="font-semibold mb-2">
+          Poll
+        </h3>
 
-          {options.map((opt, i) => (
+        {options.map(
+          (
+            opt,
+            i,
+          ) => (
             <input
               key={i}
-              className="w-full border p-2 mb-2"
-              placeholder={`Option ${i + 1}`}
-              onChange={(e) => {
-                const newOptions = [...options];
-                newOptions[i] = e.target.value;
-                setOptions(newOptions);
+              className="w-full border p-2 rounded-xl mb-2"
+              placeholder={`Option ${
+                i + 1
+              }`}
+              onChange={(
+                e,
+              ) => {
+                const arr =
+                  [
+                    ...options,
+                  ];
+
+                arr[
+                  i
+                ] =
+                  e.target.value;
+
+                setOptions(
+                  arr,
+                );
               }}
             />
-          ))}
+          ),
+        )}
 
-          <button onClick={addOption} className="text-blue-500 text-sm">
-            + Add option
-          </button>
-        </div>
+        <button
+          onClick={
+            addOption
+          }
+          className="text-blue-600 mb-4"
+        >
+          + Add Option
+        </button>
 
-        {/* FILE */}
-        <input type="file" onChange={handleFileChange} />
+        <input
+          type="file"
+          onChange={
+            handleFileChange
+          }
+        />
 
         {preview && (
-          <img src={preview} className="w-full mt-3 rounded" />
+          <img
+            src={
+              preview
+            }
+            className="rounded-xl mt-3"
+          />
         )}
 
-        {!preview && fileName && (
-          <p className="mt-2 text-sm">📄 {fileName}</p>
-        )}
+        {!preview &&
+          fileName && (
+            <p className="mt-2 text-sm">
+              📄{" "}
+              {
+                fileName
+              }
+            </p>
+          )}
 
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose}>Cancel</button>
+        <div className="flex justify-end gap-3 mt-6">
 
           <button
-            disabled={loading}
-            onClick={handleCreate}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={
+              onClose
+            }
           >
-            {loading ? "Posting..." : "Post 🚀"}
+            Cancel
           </button>
+
+          <button
+            onClick={
+              handleCreate
+            }
+            className="bg-blue-600 text-white px-5 py-2 rounded-xl"
+          >
+            Post
+          </button>
+
         </div>
+
       </div>
+
     </div>
   );
 }

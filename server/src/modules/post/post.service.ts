@@ -25,20 +25,21 @@ export class PostService {
 
     @InjectRepository(Like)
     private likeRepo: Repository<Like>,
+
     @InjectRepository(Follow)
     private followRepo: Repository<Follow>,
   ) {}
 
-  // ✅ CREATE POST + POLL
+  // CREATE POST
   async create(body: any, userId: number, file?: Express.Multer.File) {
     const user = await this.userRepo.findOne({
       where: { id: userId },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException();
 
-    let image: string | undefined = undefined;
-    let filePath: string | undefined = undefined;
+    let image: string | undefined;
+    let filePath: string | undefined;
 
     if (file) {
       if (file.mimetype.startsWith('image')) {
@@ -58,7 +59,7 @@ export class PostService {
 
     const savedPost = await this.postRepo.save(post);
 
-    // ✅ CREATE POLL
+    // CREATE POLLS
     if (body.options) {
       const options: string[] = JSON.parse(body.options);
 
@@ -71,13 +72,19 @@ export class PostService {
           }),
         );
 
-      await this.pollRepo.save(polls);
+      if (polls.length > 0) {
+        await this.pollRepo.save(polls);
+      }
     }
 
-    return savedPost;
+    // 🔥 THIS WAS MISSING
+    return await this.postRepo.findOne({
+      where: { id: savedPost.id },
+      relations: ['author', 'polls'],
+    });
   }
 
-  // ✅ VOTE
+  // VOTE
   async vote(pollId: number, userId: number) {
   const poll = await this.pollRepo.findOne({
     where: { id: pollId },
@@ -88,103 +95,120 @@ export class PostService {
     where: { id: userId },
   });
 
-  if (!poll || !user) throw new NotFoundException();
+  if (!poll || !user) {
+    throw new NotFoundException();
+  }
 
-  // 🔒 LOCK: find existing vote for this POST (not poll)
-  const existingVote = await this.voteRepo.findOne({
+  // 🔥 Get ALL votes of this user
+  const userVotes = await this.voteRepo.find({
     where: {
       user: { id: userId },
-      poll: {
-        post: { id: poll.post.id },
-      },
     },
     relations: ['poll', 'poll.post'],
   });
 
-  // 🧠 IF SAME OPTION → do nothing
+  // 🔥 Find vote for THIS POST ONLY
+  const existingVote = userVotes.find(
+    (vote) => vote.poll.post.id === poll.post.id,
+  );
+
+  // ✅ same option clicked again → do nothing
   if (existingVote && existingVote.poll.id === pollId) {
     return await this.pollRepo.find({
-      where: { post: { id: poll.post.id } },
+      where: {
+        post: { id: poll.post.id },
+      },
     });
   }
 
-  // 🔁 REMOVE OLD VOTE
+  // ✅ switching vote
   if (existingVote) {
-    existingVote.poll.votes = Math.max(0, existingVote.poll.votes - 1);
+    existingVote.poll.votes = Math.max(
+      0,
+      existingVote.poll.votes - 1,
+    );
+
     await this.pollRepo.save(existingVote.poll);
+
     await this.voteRepo.remove(existingVote);
   }
 
-  // ✅ ADD NEW VOTE
-  const newVote = this.voteRepo.create({ user, poll });
+  // ✅ add new vote
+  const newVote = this.voteRepo.create({
+    user,
+    poll,
+  });
+
   await this.voteRepo.save(newVote);
 
   poll.votes += 1;
+
   await this.pollRepo.save(poll);
 
-  // 🔄 RETURN UPDATED POLLS
+  // 🔥 return updated polls
   return await this.pollRepo.find({
-    where: { post: { id: poll.post.id } },
+    where: {
+      post: { id: poll.post.id },
+    },
+    order: {
+      id: 'ASC',
+    },
   });
 }
 
-  // ✅ GET POSTS
-async findAll(userId: number, page: number = 1) {
-  const limit = 5;
-  const skip = (page - 1) * limit;
+  // FEED
+  async findAll(userId: number, page = 1) {
+    const limit = 5;
+    const skip = (page - 1) * limit;
 
-  const posts = await this.postRepo.find({
-    relations: ['author', 'polls'],
-    take: limit,
-    skip: skip,
-    order: { id: 'DESC' },
-  });
+    const posts = await this.postRepo.find({
+      relations: ['author', 'polls'],
+      take: limit,
+      skip,
+      order: { id: 'DESC' },
+    });
 
-  return Promise.all(
-    posts.map(async (post) => {
-      // 👍 like count
-      const likeCount = await this.likeRepo.count({
-        where: { post: { id: post.id } },
-      });
+    return Promise.all(
+      posts.map(async (post) => {
+        const likeCount = await this.likeRepo.count({
+          where: { post: { id: post.id } },
+        });
 
-      const liked = await this.likeRepo.findOne({
-        where: {
-          post: { id: post.id },
-          user: { id: userId },
-        },
-      });
+        const liked = await this.likeRepo.findOne({
+          where: {
+            post: { id: post.id },
+            user: { id: userId },
+          },
+        });
 
-      // 🔥 FOLLOW CHECK (IMPORTANT)
-      const isFollowing = await this.followRepo.findOne({
-        where: {
-          follower: { id: userId },
-          following: { id: post.author.id },
-        },
-      });
+        const isFollowing = await this.followRepo.findOne({
+          where: {
+            follower: { id: userId },
+            following: { id: post.author.id },
+          },
+        });
 
-      return {
-        ...post,
-        likeCount,
-        liked: !!liked,
-        isFollowing: !!isFollowing, // ✅ THIS IS THE KEY
-      };
-    }),
-  );
-}
+        return {
+          ...post,
+          likeCount,
+          liked: !!liked,
+          isFollowing: !!isFollowing,
+        };
+      }),
+    );
+  }
 
-  // ✅ LIKE (OLD)
   async likePost(id: number) {
     const post = await this.postRepo.findOne({
       where: { id },
     });
 
-    if (!post) throw new NotFoundException('Post not found');
+    if (!post) throw new NotFoundException();
 
     post.likes += 1;
     return this.postRepo.save(post);
   }
 
-  // ✅ TOGGLE LIKE
   async toggleLike(postId: number, userId: number) {
     const post = await this.postRepo.findOne({
       where: { id: postId },
@@ -206,7 +230,11 @@ async findAll(userId: number, page: number = 1) {
     if (existing) {
       await this.likeRepo.remove(existing);
     } else {
-      const like = this.likeRepo.create({ post, user });
+      const like = this.likeRepo.create({
+        post,
+        user,
+      });
+
       await this.likeRepo.save(like);
     }
 
@@ -214,16 +242,38 @@ async findAll(userId: number, page: number = 1) {
       where: { post: { id: postId } },
     });
 
-    const liked = await this.likeRepo.findOne({
-      where: {
-        post: { id: postId },
-        user: { id: userId },
-      },
-    });
-
     return {
-      liked: !!liked,
+      liked: !existing,
       count,
     };
   }
+  async getUserPosts(userId: number) {
+  return this.postRepo.find({
+    where: {
+      author: { id: userId },
+    },
+    relations: ['author', 'polls'],
+    order: {
+      id: 'DESC',
+    },
+  });
+}
+
+async searchUsers(query: string) {
+  return this.userRepo
+    .createQueryBuilder('user')
+    .where(
+      'LOWER(user.username) LIKE LOWER(:query)',
+      {
+        query: `%${query}%`,
+      },
+    )
+    .orWhere(
+      'LOWER(user.email) LIKE LOWER(:query)',
+      {
+        query: `%${query}%`,
+      },
+    )
+    .getMany();
+}
 }
