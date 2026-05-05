@@ -2,156 +2,236 @@
 
 import { useEffect, useState } from "react";
 import API from "../../../lib/api";
-import { io } from "socket.io-client";
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unread, setUnread] = useState(0);
+  const [open, setOpen] =
+    useState(false);
 
-  // 🔔 LOAD EXISTING NOTIFICATIONS
+  const [notifications, setNotifications] =
+    useState<any[]>([]);
+
+  const [unread, setUnread] =
+    useState(0);
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await API.get("/notifications");
+    const load =
+      async () => {
+        try {
+          const res =
+            await API.get(
+              "/notifications",
+            );
 
-        setNotifications(res.data);
-        setUnread(res.data.filter((n: any) => !n.isRead).length);
-      } catch (err) {
-        console.log("Not logged in or no notifications");
-      }
-    };
+          setNotifications(
+            res.data,
+          );
+
+          setUnread(
+            res.data.filter(
+              (
+                n: any,
+              ) =>
+                !n.isRead,
+            ).length,
+          );
+        } catch {}
+      };
 
     load();
   }, []);
 
-  // ⚡ REAL-TIME SOCKET
-useEffect(() => {
-  if (typeof window === "undefined") return; // ✅ fix SSR issue
+  useEffect(() => {
+    let socket: any;
 
-  const userId = localStorage.getItem("userId");
-  if (!userId) return;
+    const connect =
+      async () => {
+        const userId =
+          localStorage.getItem(
+            "userId",
+          );
 
-  let socket: any;
+        if (!userId)
+          return;
 
-  const connectSocket = async () => {
-    const { io } = await import("socket.io-client"); // ✅ dynamic import (fix)
+        const {
+          io,
+        } =
+          await import(
+            "socket.io-client",
+          );
 
-    socket = io("http://localhost:5000", {
-      query: { userId },
-      transports: ["websocket"], // ✅ more stable
-    });
+        socket =
+          io(
+            "http://localhost:5000",
+            {
+              query: {
+                userId,
+              },
+              transports: [
+                "websocket",
+              ],
+            },
+          );
 
-    socket.on("connect", () => {
-      setOpen(true);
-      console.log("Connected:", socket.id);
-    });
+        socket.on(
+          "notification",
+          (
+            msg: string,
+          ) => {
+            setNotifications(
+              (
+                prev,
+              ) => [
+                {
+                  id:
+                    Date.now(),
+                  message:
+                    msg,
+                  isRead:
+                    false,
+                },
+                ...prev,
+              ],
+            );
 
-    socket.on("notification", (msg: string) => {
-      const newNotif = {
-        id: Date.now(),
-        message: msg,
-        isRead: false,
+            setUnread(
+              (
+                prev,
+              ) =>
+                prev +
+                1,
+            );
+          },
+        );
       };
 
-      setNotifications((prev) => [newNotif, ...prev]);
-      setUnread((prev) => prev + 1);
-    });
+    connect();
 
-    socket.on("disconnect", () => {
-      console.log("Disconnected");
-    });
-  };
+    return () => {
+      socket?.disconnect();
+    };
+  }, []);
 
-  connectSocket();
-
-  return () => {
-    if (socket) socket.disconnect();
-  };
-}, []);
-
-  // ✅ MARK AS READ
-  const markAsRead = async (id: number) => {
-    try {
-      await API.patch(`/notifications/${id}`);
-
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, isRead: true } : n
-        )
+  const markAsRead =
+    async (
+      id: number,
+    ) => {
+      await API.patch(
+        `/notifications/${id}`,
       );
 
-      setUnread((prev) => Math.max(prev - 1, 0));
-    } catch (err) {
-      console.log("Failed to mark as read");
-    }
-  };
+      setNotifications(
+        (
+          prev,
+        ) =>
+          prev.map(
+            (
+              n,
+            ) =>
+              n.id ===
+              id
+                ? {
+                    ...n,
+                    isRead:
+                      true,
+                  }
+                : n,
+          ),
+      );
+
+      setUnread(
+        (
+          prev,
+        ) =>
+          Math.max(
+            prev -
+              1,
+            0,
+          ),
+      );
+    };
 
   return (
-    <div className="bg-white shadow px-6 py-3 flex justify-between items-center relative">
+    <div className="bg-white dark:bg-gray-900 shadow px-8 py-4 flex justify-between items-center">
 
-      <h1 className="text-xl font-bold text-gray-800">
+      <h1 className="text-xl font-bold">
         Student Collab 🚀
       </h1>
-      
-      {/* 🔔 NOTIFICATION BELL */}
-      <div className="relative">
-        <button
-  onClick={() =>
-    window.dispatchEvent(
-      new Event(
-        "open-chat",
-      ),
-    )
-  }
-  className="text-2xl mr-4"
->
-  💬
-</button>
-        <button
-          onClick={() => setOpen(!open)}
-          className="relative text-2xl"
-        >
-          🔔
 
-          {/* RED DOT */}
-          {unread > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1 rounded-full">
-              {unread}
-            </span>
-          )}
+      <div className="flex items-center gap-8 mr-20">
+
+        <button
+          onClick={() =>
+            window.dispatchEvent(
+              new Event(
+                "open-chat",
+              ),
+            )
+          }
+          className="text-2xl hover:scale-110 transition"
+        >
+          💬
         </button>
 
-        {/* DROPDOWN */}
-        {open && (
-          <div className="absolute right-0 mt-2 w-80 bg-white shadow-xl rounded-xl border max-h-96 overflow-y-auto z-50">
+        <div className="relative">
 
-            <div className="p-3 font-semibold border-b">
-              Notifications
-            </div>
+          <button
+            onClick={() =>
+              setOpen(
+                !open,
+              )
+            }
+            className="text-2xl relative"
+          >
+            🔔
 
-            {notifications.length === 0 && (
-              <p className="p-4 text-sm text-gray-400">
-                No notifications
-              </p>
+            {unread >
+              0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 rounded-full">
+                {
+                  unread
+                }
+              </span>
             )}
 
-            {notifications.map((n) => (
-              <div
-                key={n.id}
-                onClick={() => markAsRead(n.id)}
-                className={`p-3 text-sm border-b cursor-pointer transition ${
-                  n.isRead
-                    ? "bg-white text-gray-500"
-                    : "bg-blue-50 font-medium"
-                } hover:bg-gray-100`}
-              >
-                {n.message}
+          </button>
+
+          {open && (
+            <div className="absolute right-0 top-14 w-96 bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border z-[1000] max-h-[500px] overflow-y-auto">
+
+              <div className="p-4 font-bold border-b">
+                Notifications
               </div>
-            ))}
-          </div>
-        )}
+
+              {notifications.map(
+                (
+                  n,
+                ) => (
+                  <div
+                    key={
+                      n.id
+                    }
+                    onClick={() =>
+                      markAsRead(
+                        n.id,
+                      )
+                    }
+                    className="p-4 cursor-pointer border-b hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    {
+                      n.message
+                    }
+                  </div>
+                ),
+              )}
+
+            </div>
+          )}
+
+        </div>
+
       </div>
+
     </div>
   );
 }

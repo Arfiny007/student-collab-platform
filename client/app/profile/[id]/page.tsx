@@ -90,6 +90,27 @@ export default function PublicProfile() {
 
     load();
   }, []);
+  const blockUser =
+  async () => {
+    await API.post(
+      `/users/block/${user.id}`,
+    );
+
+    alert(
+      "User blocked",
+    );
+  };
+
+const muteUser =
+  async () => {
+    await API.post(
+      `/users/mute/${user.id}`,
+    );
+
+    alert(
+      "User muted",
+    );
+  };
 
   if (!user)
     return (
@@ -156,6 +177,28 @@ export default function PublicProfile() {
 >
   Message
 </button>
+
+<div className="flex gap-3 mt-4">
+
+  <button
+    onClick={
+      muteUser
+    }
+    className="bg-yellow-500 text-white px-4 py-2 rounded-xl"
+  >
+    Mute
+  </button>
+
+  <button
+    onClick={
+      blockUser
+    }
+    className="bg-red-600 text-white px-4 py-2 rounded-xl"
+  >
+    Block
+  </button>
+
+</div>
               </p>
 
             </div>
@@ -256,7 +299,13 @@ export default function PublicProfile() {
 
       {/* FOLLOWERS MODAL */}
       {showFollowers && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+        <div
+  onClick={() =>
+    setShowFollowers(
+      false,
+    )
+  }
+  className="fixed inset-0 bg-black/40 flex justify-center items-center">
 
           <div className="bg-white rounded-3xl p-6 w-[400px]">
 
@@ -289,7 +338,13 @@ export default function PublicProfile() {
 
       {/* FOLLOWING */}
       {showFollowing && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+        <div
+  onClick={() =>
+    setShowFollowers(
+      false,
+    )
+  }
+  className="fixed inset-0 bg-black/40 flex justify-center items-center">
 
           <div className="bg-white rounded-3xl p-6 w-[400px]">
 

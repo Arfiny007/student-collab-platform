@@ -24,9 +24,19 @@ export class Message {
   file?: string;
 
   @Column({
+    nullable: true,
+  })
+  reaction?: string;
+
+  @Column({
     default: false,
   })
   seen: boolean;
+
+  @Column({
+    default: false,
+  })
+  delivered: boolean;
 
   @Column({
     default: false,
@@ -37,6 +47,16 @@ export class Message {
     default: false,
   })
   deleted: boolean;
+
+  @Column({
+    default: false,
+  })
+  pinned: boolean;
+
+  @Column({
+    default: false,
+  })
+  archived: boolean;
 
   @ManyToOne(
     () => User,

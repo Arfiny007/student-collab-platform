@@ -16,9 +16,13 @@ import {
   FileInterceptor,
 } from "@nestjs/platform-express";
 
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import {
+  JwtAuthGuard,
+} from "../auth/jwt-auth.guard";
 
-import { ChatService } from "./chat.service";
+import {
+  ChatService,
+} from "./chat.service";
 
 @Controller("chat")
 export class ChatController {
@@ -26,6 +30,7 @@ export class ChatController {
     private chatService: ChatService,
   ) {}
 
+  // SEND MESSAGE
   @UseGuards(
     JwtAuthGuard,
   )
@@ -44,7 +49,7 @@ export class ChatController {
     id: string,
 
     @Req()
-    req,
+    req: any,
 
     @Body()
     body: any,
@@ -60,10 +65,65 @@ export class ChatController {
     );
   }
 
+  // REACTION
   @UseGuards(
     JwtAuthGuard,
   )
-  @Patch(":id")
+  @Patch(
+    ":id/react",
+  )
+  react(
+    @Param("id")
+    id: string,
+
+    @Body()
+    body: any,
+  ) {
+    return this.chatService.react(
+      Number(id),
+      body.emoji,
+    );
+  }
+
+  // PIN
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Patch(
+    ":id/pin",
+  )
+  pin(
+    @Param("id")
+    id: string,
+  ) {
+    return this.chatService.togglePin(
+      Number(id),
+    );
+  }
+
+  // ARCHIVE
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Patch(
+    ":id/archive",
+  )
+  archive(
+    @Param("id")
+    id: string,
+  ) {
+    return this.chatService.toggleArchive(
+      Number(id),
+    );
+  }
+
+  // EDIT
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Patch(
+    ":id",
+  )
   edit(
     @Param("id")
     id: string,
@@ -77,10 +137,13 @@ export class ChatController {
     );
   }
 
+  // DELETE
   @UseGuards(
     JwtAuthGuard,
   )
-  @Delete(":id")
+  @Delete(
+    ":id",
+  )
   remove(
     @Param("id")
     id: string,
@@ -90,29 +153,33 @@ export class ChatController {
     );
   }
 
+  // RECENT CHATS
   @UseGuards(
     JwtAuthGuard,
   )
   @Get()
   recent(
     @Req()
-    req,
+    req: any,
   ) {
     return this.chatService.getRecentChats(
       req.user.userId,
     );
   }
 
+  // CHAT HISTORY
   @UseGuards(
     JwtAuthGuard,
   )
-  @Get(":id")
+  @Get(
+    ":id",
+  )
   history(
     @Param("id")
     id: string,
 
     @Req()
-    req,
+    req: any,
   ) {
     return this.chatService.getConversation(
       req.user.userId,

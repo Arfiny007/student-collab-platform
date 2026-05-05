@@ -1,13 +1,19 @@
-import { Module } from '@nestjs/common';
+import { Module } from "@nestjs/common";
 
-import { UserService } from './user.service';
-import { UserController } from './user.controller';
+import { UserService } from "./user.service";
 
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserController } from "./user.controller";
 
-import { User } from './user.entity';
-import { Follow } from './follow/follow.entity';
-import { Post } from '../post/post.entity';
+import { TypeOrmModule } from "@nestjs/typeorm";
+
+import { User } from "./user.entity";
+
+import { Follow } from "./follow/follow.entity";
+
+import { Post } from "../post/post.entity";
+
+import { Story } from "./story.entity";
+import { PostModule } from "../post/post.module";
 
 @Module({
   imports: [
@@ -15,10 +21,23 @@ import { Post } from '../post/post.entity';
       User,
       Follow,
       Post,
+      Story,
+      
     ]),
+      PostModule,
+
   ],
-  providers: [UserService],
-  controllers: [UserController],
-  exports: [UserService],
+
+  providers: [
+    UserService,
+  ],
+
+  controllers: [
+    UserController,
+  ],
+
+  exports: [
+    UserService,
+  ],
 })
 export class UserModule {}

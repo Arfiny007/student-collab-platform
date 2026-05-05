@@ -10,47 +10,69 @@ import {
   UseInterceptors,
   Param,
   Query,
-} from '@nestjs/common';
+} from "@nestjs/common";
 
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileInterceptor,
+} from "@nestjs/platform-express";
 
-import { UserService } from './user.service';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { CreateUserDto } from './dto/create-user.dto';
+import { UserService } from "./user.service";
 
-@Controller('users')
+import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
+
+@Controller("users")
 export class UserController {
   constructor(
     private userService: UserService,
   ) {}
 
-  @Post('register')
+  @Post(
+    "register",
+  )
   register(
-    @Body() body: CreateUserDto,
+    @Body()
+    body: any,
   ) {
-    return this.userService.register(body);
+    return this.userService.register(
+      body,
+    );
   }
 
-  // MY PROFILE
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  me(@Req() req) {
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Get(
+    "me",
+  )
+  me(
+    @Req()
+    req,
+  ) {
     return this.userService.getProfile(
       req.user.userId,
     );
   }
 
-  // UPDATE PROFILE
-  @UseGuards(JwtAuthGuard)
-  @Patch('me')
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Patch(
+    "me",
+  )
   @UseInterceptors(
-    FileInterceptor('avatar', {
-      dest: './uploads',
-    }),
+    FileInterceptor(
+      "avatar",
+      {
+        dest:
+          "./uploads",
+      },
+    ),
   )
   update(
-    @Req() req,
-    @Body() body: any,
+    @Req()
+    req,
+    @Body()
+    body: any,
     @UploadedFile()
     file?: Express.Multer.File,
   ) {
@@ -61,33 +83,122 @@ export class UserController {
     );
   }
 
-  // SEARCH USERS
-  @Get('search')
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Post(
+    "story",
+  )
+  @UseInterceptors(
+    FileInterceptor(
+      "file",
+      {
+        dest:
+          "./uploads",
+      },
+    ),
+  )
+  story(
+    @Req()
+    req,
+    @UploadedFile()
+    file: Express.Multer.File,
+  ) {
+    return this.userService.createStory(
+      req.user.userId,
+      file,
+    );
+  }
+
+  @Get(
+    "stories",
+  )
+  stories() {
+    return this.userService.getStories();
+  }
+  @UseGuards(
+  JwtAuthGuard,
+)
+@Get(
+  "analytics",
+)
+analytics(
+  @Req()
+  req,
+) {
+  return this.userService.getAnalytics(
+    req.user.userId,
+  );
+}
+
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Get(
+    "suggested",
+  )
+  suggested(
+    @Req()
+    req,
+  ) {
+    return this.userService.suggestedUsers(
+      req.user.userId,
+    );
+  }
+
+  @Get(
+    "search",
+  )
   search(
-    @Query('q') q: string,
+    @Query("q")
+    q: string,
   ) {
     return this.userService.searchUsers(
-      q || '',
+      q ||
+        "",
     );
   }
 
-  // PUBLIC PROFILE
-  @Get(':id')
-  publicProfile(
-    @Param('id') id: string,
+  @UseGuards(
+  JwtAuthGuard,
+)
+@Get(
+  "saved",
+)
+saved(
+  @Req()
+  req,
+) {
+  return this.userService.getSavedPosts(
+    req.user.userId,
+  );
+}
+
+  @Get(
+    ":id",
+  )
+  profile(
+    @Param("id")
+    id: string,
   ) {
     return this.userService.getProfile(
-      Number(id),
+      Number(
+        id,
+      ),
     );
   }
 
-  // USER POSTS
-  @Get(':id/posts')
+  @Get(
+    ":id/posts",
+  )
   posts(
-    @Param('id') id: string,
+    @Param("id")
+    id: string,
   ) {
     return this.userService.getUserPosts(
-      Number(id),
+      Number(
+        id,
+      ),
     );
   }
 }

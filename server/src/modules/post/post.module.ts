@@ -1,16 +1,47 @@
-import { Module } from '@nestjs/common';
-import { PostService } from './post.service';
-import { PostController } from './post.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Post } from './post.entity';
-import { User } from '../user/user.entity';
-import { Like } from './like.entity';
-import { Poll } from './poll.entity';
-import { Vote } from './vote.entity';
-import { Follow } from '../user/follow/follow.entity';
+import { Module } from "@nestjs/common";
+
+import { PostService } from "./post.service";
+
+import { PostController } from "./post.controller";
+
+import { TypeOrmModule } from "@nestjs/typeorm";
+
+import { Post } from "./post.entity";
+
+import { User } from "../user/user.entity";
+
+import { Like } from "./like.entity";
+
+import { Poll } from "./poll.entity";
+
+import { Vote } from "./vote.entity";
+
+import { Follow } from "../user/follow/follow.entity";
+
+import { Save } from "./save.entity";
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, User, Like, Poll, Vote, Follow])],
-  providers: [PostService],
-  controllers: [PostController],
+  imports: [
+    TypeOrmModule.forFeature([
+      Post,
+      User,
+      Like,
+      Poll,
+      Vote,
+      Follow,
+      Save,
+    ]),
+  ],
+
+  providers: [
+    PostService,
+  ],
+
+  controllers: [
+    PostController,
+  ],
+  exports: [
+  PostService,
+],
 })
 export class PostModule {}

@@ -20,14 +20,10 @@ import { ChatGateway } from "./chat.gateway";
 @Injectable()
 export class ChatService {
   constructor(
-    @InjectRepository(
-      Message,
-    )
+    @InjectRepository(Message)
     private messageRepo: Repository<Message>,
 
-    @InjectRepository(
-      User,
-    )
+    @InjectRepository(User)
     private userRepo: Repository<User>,
 
     private gateway: ChatGateway,
@@ -41,22 +37,15 @@ export class ChatService {
   ) {
     const sender =
       await this.userRepo.findOne({
-        where: {
-          id: senderId,
-        },
+        where: { id: senderId },
       });
 
     const receiver =
       await this.userRepo.findOne({
-        where: {
-          id: receiverId,
-        },
+        where: { id: receiverId },
       });
 
-    if (
-      !sender ||
-      !receiver
-    ) {
+    if (!sender || !receiver) {
       throw new NotFoundException();
     }
 
@@ -88,21 +77,71 @@ export class ChatService {
     return saved;
   }
 
+  async react(
+    id: number,
+    emoji: string,
+  ) {
+    const msg =
+      await this.messageRepo.findOne({
+        where: { id },
+      });
+
+    if (!msg) return;
+
+    msg.reaction =
+      emoji;
+
+    return this.messageRepo.save(
+      msg,
+    );
+  }
+
+  async togglePin(
+    id: number,
+  ) {
+    const msg =
+      await this.messageRepo.findOne({
+        where: { id },
+      });
+
+    if (!msg) return;
+
+    msg.pinned =
+      !msg.pinned;
+
+    return this.messageRepo.save(
+      msg,
+    );
+  }
+
+  async toggleArchive(
+    id: number,
+  ) {
+    const msg =
+      await this.messageRepo.findOne({
+        where: { id },
+      });
+
+    if (!msg) return;
+
+    msg.archived =
+      !msg.archived;
+
+    return this.messageRepo.save(
+      msg,
+    );
+  }
+
   async edit(
     id: number,
     text: string,
   ) {
     const msg =
       await this.messageRepo.findOne({
-        where: {
-          id,
-        },
+        where: { id },
       });
 
-    if (
-      !msg
-    )
-      return;
+    if (!msg) return;
 
     msg.text =
       text;
@@ -120,15 +159,10 @@ export class ChatService {
   ) {
     const msg =
       await this.messageRepo.findOne({
-        where: {
-          id,
-        },
+        where: { id },
       });
 
-    if (
-      !msg
-    )
-      return;
+    if (!msg) return;
 
     msg.deleted =
       true;
@@ -145,34 +179,54 @@ export class ChatService {
     userId: number,
     otherId: number,
   ) {
-    return this.messageRepo
-      .createQueryBuilder(
-        "message",
-      )
-      .leftJoinAndSelect(
-        "message.sender",
-        "sender",
-      )
-      .leftJoinAndSelect(
-        "message.receiver",
-        "receiver",
-      )
-      .where(
-        `
+    const messages =
+      await this.messageRepo
+        .createQueryBuilder(
+          "message",
+        )
+        .leftJoinAndSelect(
+          "message.sender",
+          "sender",
+        )
+        .leftJoinAndSelect(
+          "message.receiver",
+          "receiver",
+        )
+        .where(
+          `
 (sender.id = :userId AND receiver.id = :otherId)
 OR
 (sender.id = :otherId AND receiver.id = :userId)
 `,
-        {
-          userId,
-          otherId,
-        },
-      )
-      .orderBy(
-        "message.id",
-        "ASC",
-      )
-      .getMany();
+          {
+            userId,
+            otherId,
+          },
+        )
+        .orderBy(
+          "message.id",
+          "ASC",
+        )
+        .getMany();
+
+    for (
+      const m of messages
+    ) {
+      if (
+        m.receiver.id ===
+          userId &&
+        !m.seen
+      ) {
+        m.seen =
+          true;
+
+        await this.messageRepo.save(
+          m,
+        );
+      }
+    }
+
+    return messages;
   }
 
   async getRecentChats(
@@ -214,6 +268,11 @@ OR
             lastMessage:
               m.text ||
               "📎 file",
+            unread:
+              !m.seen &&
+              m.receiver
+                .id ===
+                userId,
           },
         );
       }

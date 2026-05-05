@@ -57,6 +57,12 @@ export default function PostCard({
         false,
     );
 
+  const [saved, setSaved] =
+    useState(
+      post.saved ||
+        false,
+    );
+
   useEffect(() => {
     const id =
       localStorage.getItem(
@@ -90,54 +96,108 @@ export default function PostCard({
       )
         return;
 
-      setVoting(
-        true,
-      );
-
-      const res =
-        await API.post(
-          `/posts/vote/${pollId}`,
+      try {
+        setVoting(
+          true,
         );
 
-      setPolls(
-        res.data,
-      );
+        const res =
+          await API.post(
+            `/posts/vote/${pollId}`,
+          );
 
-      setSelected(
-        pollId,
-      );
+        setPolls(
+          res.data,
+        );
 
-      setVoting(
-        false,
-      );
+        setSelected(
+          pollId,
+        );
+      } catch {
+        alert(
+          "Vote failed",
+        );
+      } finally {
+        setVoting(
+          false,
+        );
+      }
     };
 
   const handleFollow =
     async () => {
-      const res =
-        await API.post(
-          `/follow/${post.author.id}`,
-        );
+      try {
+        const res =
+          await API.post(
+            `/follow/${post.author.id}`,
+          );
 
-      setIsFollowing(
-        res.data.following,
-      );
+        setIsFollowing(
+          res.data.following,
+        );
+      } catch {}
     };
 
   const toggleLike =
     async () => {
-      const res =
-        await API.patch(
-          `/posts/${post.id}/toggle-like`,
+      try {
+        const res =
+          await API.patch(
+            `/posts/${post.id}/toggle-like`,
+          );
+
+        setLiked(
+          res.data.liked,
         );
 
-      setLiked(
-        res.data.liked,
-      );
+        setCount(
+          res.data.count,
+        );
+      } catch {}
+    };
 
-      setCount(
-        res.data.count,
-      );
+  const toggleSave =
+    async () => {
+      try {
+        const res =
+          await API.patch(
+            `/posts/${post.id}/save`,
+          );
+
+        setSaved(
+          res.data.saved,
+        );
+      } catch {}
+    };
+
+  const sharePost =
+    async () => {
+      try {
+        await navigator.clipboard.writeText(
+          post.shareUrl,
+        );
+
+        alert(
+          "Link copied",
+        );
+      } catch {}
+    };
+
+  const reportPost =
+    async () => {
+      try {
+        await API.post(
+          `/report/post/${post.id}`,
+        );
+
+        alert(
+          "Post reported",
+        );
+      } catch {
+        alert(
+          "Report failed",
+        );
+      }
     };
 
   return (
@@ -290,14 +350,7 @@ export default function PostCard({
                   </div>
 
                   <p className="text-xs text-gray-500 mt-1">
-                    {
-                      percent
-                    }
-                    % (
-                    {
-                      p.votes
-                    }{" "}
-                    votes)
+                    {percent}% ({p.votes} votes)
                   </p>
 
                 </div>
@@ -315,17 +368,66 @@ export default function PostCard({
           onClick={
             toggleLike
           }
-          className={`${
-            liked
-              ? "text-red-500"
-              : ""
-          }`}
         >
-          ❤️{" "}
-          {
-            count
-          }
+          ❤️ {count}
         </button>
+
+        <button
+          onClick={
+            toggleSave
+          }
+        >
+          {saved
+            ? "🔖"
+            : "📑"}
+        </button>
+
+        <button
+          onClick={
+            sharePost
+          }
+        >
+          📤
+        </button>
+
+        <button
+          onClick={
+            reportPost
+          }
+        >
+          🚨
+        </button>
+
+        <button
+  onClick={async () => {
+    const res =
+      await API.patch(
+        `/posts/${post.id}/save`,
+      );
+
+    alert(
+      res.data.saved
+        ? "Saved"
+        : "Unsaved",
+    );
+  }}
+>
+  🔖
+</button>
+
+<button
+  onClick={() => {
+    navigator.clipboard.writeText(
+      post.shareUrl,
+    );
+
+    alert(
+      "Link copied",
+    );
+  }}
+>
+  📤
+</button>
 
       </div>
 

@@ -9,13 +9,13 @@ export default function Sidebar() {
     useRouter();
 
   return (
-    <div className="w-64 h-screen bg-white border-r p-6">
+    <div className="w-72 h-screen bg-white dark:bg-gray-900 border-r p-8 transition-all">
 
-      <h1 className="text-2xl font-bold mb-8 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+      <h1 className="text-3xl font-bold mb-10 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
         🚀 Collab
       </h1>
 
-      <ul className="space-y-5">
+      <ul className="space-y-6 text-lg">
 
         <li
           onClick={() =>
@@ -23,9 +23,42 @@ export default function Sidebar() {
               "/dashboard",
             )
           }
-          className="cursor-pointer hover:text-blue-600"
+          className="cursor-pointer hover:translate-x-2 transition"
         >
-          Feed
+          🏠 Feed
+        </li>
+
+        <li
+          onClick={() =>
+            router.push(
+              "/explore",
+            )
+          }
+          className="cursor-pointer hover:translate-x-2 transition"
+        >
+          🔥 Explore
+        </li>
+
+        <li
+          onClick={() =>
+            router.push(
+              "/saved",
+            )
+          }
+          className="cursor-pointer hover:translate-x-2 transition"
+        >
+          🔖 Saved
+        </li>
+
+        <li
+          onClick={() =>
+            router.push(
+              "/analytics",
+            )
+          }
+          className="cursor-pointer hover:translate-x-2 transition"
+        >
+          📊 Analytics
         </li>
 
         <li
@@ -34,9 +67,9 @@ export default function Sidebar() {
               "/profile",
             )
           }
-          className="cursor-pointer hover:text-blue-600"
+          className="cursor-pointer hover:translate-x-2 transition"
         >
-          Profile
+          👤 Profile
         </li>
 
         <li
@@ -45,7 +78,7 @@ export default function Sidebar() {
               "/messages",
             )
           }
-          className="cursor-pointer hover:text-blue-600"
+          className="cursor-pointer hover:translate-x-2 transition"
         >
           💬 Messages
         </li>

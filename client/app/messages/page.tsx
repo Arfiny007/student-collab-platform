@@ -12,6 +12,9 @@ export default function MessagesPage() {
   const scrollRef =
     useRef<any>(null);
 
+  const fileRef =
+    useRef<any>(null);
+
   const [messages, setMessages] =
     useState<any[]>([]);
 
@@ -35,6 +38,18 @@ export default function MessagesPage() {
 
   const [myId, setMyId] =
     useState(0);
+
+  const [emojiOpen, setEmojiOpen] =
+    useState(false);
+
+  const emojis = [
+    "😀",
+    "❤️",
+    "🔥",
+    "👍",
+    "😂",
+    "🚀",
+  ];
 
   useEffect(() => {
     let socket: any;
@@ -206,6 +221,43 @@ export default function MessagesPage() {
       setText("");
     };
 
+  const sendFile =
+    async (
+      e: any,
+    ) => {
+      const file =
+        e.target
+          .files[0];
+
+      if (
+        !file
+      )
+        return;
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "file",
+        file,
+      );
+
+      const res =
+        await API.post(
+          `/chat/${chatUser.id}`,
+          formData,
+        );
+
+      setMessages(
+        (
+          prev,
+        ) => [
+          ...prev,
+          res.data,
+        ],
+      );
+    };
+
   const filtered =
     conversations.filter(
       (
@@ -217,12 +269,106 @@ export default function MessagesPage() {
             search.toLowerCase(),
           ),
     );
+    const react =
+  async (
+    id: number,
+    emoji: string,
+  ) => {
+    const res =
+      await API.patch(
+        `/chat/${id}/react`,
+        {
+          emoji,
+        },
+      );
+
+    setMessages(
+      (
+        prev,
+      ) =>
+        prev.map(
+          (
+            m,
+          ) =>
+            m.id ===
+            id
+              ? res.data
+              : m,
+        ),
+    );
+  };
+
+const remove =
+  async (
+    id: number,
+  ) => {
+    const res =
+      await API.delete(
+        `/chat/${id}`,
+      );
+
+    setMessages(
+      (
+        prev,
+      ) =>
+        prev.map(
+          (
+            m,
+          ) =>
+            m.id ===
+            id
+              ? res.data
+              : m,
+        ),
+    );
+  };
+
+const edit =
+  async (
+    id: number,
+    oldText: string,
+  ) => {
+    const updated =
+      prompt(
+        "Edit message",
+        oldText,
+      );
+
+    if (
+      !updated
+    )
+      return;
+
+    const res =
+      await API.patch(
+        `/chat/${id}`,
+        {
+          text:
+            updated,
+        },
+      );
+
+    setMessages(
+      (
+        prev,
+      ) =>
+        prev.map(
+          (
+            m,
+          ) =>
+            m.id ===
+            id
+              ? res.data
+              : m,
+        ),
+    );
+  };
 
   return (
     <div className="h-screen flex bg-gray-100">
 
       {/* SIDEBAR */}
-      <div className="w-[340px] bg-white border-r">
+      <div className="w-[350px] bg-white border-r">
 
         <div className="p-4">
 
@@ -259,24 +405,46 @@ export default function MessagesPage() {
               className="cursor-pointer border-b p-4 hover:bg-gray-50"
             >
 
-              <div className="flex items-center gap-2">
+              <div className="flex gap-3">
 
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-
-                <p className="font-bold">
-                  {
+                <img
+                  src={
                     c.user
-                      .username
+                      .avatar
+                      ? `http://localhost:5000/${c.user.avatar}`
+                      : "https://placehold.co/50"
                   }
-                </p>
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+
+                <div>
+
+                  <div className="flex gap-2 items-center">
+
+                    <p className="font-bold">
+                      {
+                        c.user
+                          .username
+                      }
+                    </p>
+
+                    {onlineUsers.includes(
+                      c.user.id,
+                    ) && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    )}
+
+                  </div>
+
+                  <p className="text-sm text-gray-500 truncate">
+                    {
+                      c.lastMessage
+                    }
+                  </p>
+
+                </div>
 
               </div>
-
-              <p className="text-sm text-gray-500 truncate">
-                {
-                  c.lastMessage
-                }
-              </p>
 
             </div>
           ),
@@ -290,21 +458,34 @@ export default function MessagesPage() {
         {chatUser && (
           <>
             {/* HEADER */}
-            <div className="bg-white shadow p-4">
+            <div className="bg-white shadow p-4 flex gap-3">
 
-              <p className="font-bold">
-                {
-                  chatUser.username
+              <img
+                src={
+                  chatUser.avatar
+                    ? `http://localhost:5000/${chatUser.avatar}`
+                    : "https://placehold.co/50"
                 }
-              </p>
+                className="w-12 h-12 rounded-full"
+              />
 
-              <p className="text-xs text-green-500">
-                {onlineUsers.includes(
-                  chatUser.id,
-                )
-                  ? "Online"
-                  : "Offline"}
-              </p>
+              <div>
+
+                <p className="font-bold">
+                  {
+                    chatUser.username
+                  }
+                </p>
+
+                <p className="text-xs text-green-500">
+                  {onlineUsers.includes(
+                    chatUser.id,
+                  )
+                    ? "Online"
+                    : "Offline"}
+                </p>
+
+              </div>
 
             </div>
 
@@ -319,7 +500,7 @@ export default function MessagesPage() {
                     key={
                       m.id
                     }
-                    className={`mb-3 flex ${
+                    className={`mb-4 flex ${
                       m.sender
                         ?.id ===
                       myId
@@ -331,7 +512,7 @@ export default function MessagesPage() {
                     <div className="max-w-[70%]">
 
                       <div
-                        className={`px-4 py-2 rounded-2xl ${
+                        className={`px-4 py-3 rounded-2xl ${
                           m.sender
                             ?.id ===
                           myId
@@ -339,29 +520,79 @@ export default function MessagesPage() {
                             : "bg-white"
                         }`}
                       >
-                        {
-                          m.text
-                        }
+
+                        {m.text}
+
+                        {m.file && (
+                          <a
+                            href={`http://localhost:5000/${m.file}`}
+                            target="_blank"
+                            className="block underline mt-2"
+                          >
+                            📎 Attachment
+                          </a>
+                        )}
+
                       </div>
+                      <div className="flex gap-2 mt-1 text-xs">
 
-                      <p className="text-xs text-gray-400 mt-1">
-
-  {new Date(
-    m.createdAt,
-  ).toLocaleTimeString()}
+  <button
+    onClick={() =>
+      react(
+        m.id,
+        "❤️",
+      )
+    }
+  >
+    ❤️
+  </button>
 
   {m.sender?.id ===
     myId && (
     <>
-      {" • "}
+      <button
+        onClick={() =>
+          edit(
+            m.id,
+            m.text,
+          )
+        }
+      >
+        ✏️
+      </button>
 
-      {m.seen
-        ? "Seen"
-        : "Delivered"}
+      <button
+        onClick={() =>
+          remove(
+            m.id,
+          )
+        }
+      >
+        🗑
+      </button>
     </>
   )}
 
-</p>
+</div>
+
+                      <p className="text-xs text-gray-400 mt-1">
+
+                        {new Date(
+                          m.createdAt,
+                        ).toLocaleTimeString()}
+
+                        {m.sender?.id ===
+                          myId && (
+                          <>
+                            {" • "}
+
+                            {m.seen
+                              ? "Seen"
+                              : "Delivered"}
+                          </>
+                        )}
+
+                      </p>
 
                     </div>
 
@@ -384,7 +615,36 @@ export default function MessagesPage() {
             </div>
 
             {/* INPUT */}
-            <div className="bg-white p-4 flex gap-3">
+            <div className="bg-white p-4 flex gap-3 items-center">
+
+              <button
+                onClick={() =>
+                  setEmojiOpen(
+                    !emojiOpen,
+                  )
+                }
+              >
+                😊
+              </button>
+
+              <button
+                onClick={() =>
+                  fileRef.current.click()
+                }
+              >
+                📎
+              </button>
+
+              <input
+                type="file"
+                hidden
+                ref={
+                  fileRef
+                }
+                onChange={
+                  sendFile
+                }
+              />
 
               <input
                 value={
@@ -410,6 +670,36 @@ export default function MessagesPage() {
               </button>
 
             </div>
+
+            {emojiOpen && (
+              <div className="bg-white p-3 flex gap-3">
+
+                {emojis.map(
+                  (
+                    e,
+                  ) => (
+                    <button
+                      key={
+                        e
+                      }
+                      onClick={() =>
+                        setText(
+                          (
+                            prev,
+                          ) =>
+                            prev +
+                            e,
+                        )
+                      }
+                    >
+                      {e}
+                    </button>
+                  ),
+                )}
+
+              </div>
+            )}
+
           </>
         )}
 
