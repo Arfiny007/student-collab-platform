@@ -2,9 +2,26 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  Index,
 } from "typeorm";
 
+export enum UserRole {
+  USER = "user",
+  TEACHER = "teacher",
+  MODERATOR = "moderator",
+  ADMIN = "admin",
+}
+
 @Entity()
+
+@Index([
+  "email",
+])
+
+@Index([
+  "username",
+])
+
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -18,9 +35,15 @@ export class User {
   password: string;
 
   @Column({
-    default: "user",
+    type: "enum",
+
+    enum:
+      UserRole,
+
+    default:
+      UserRole.USER,
   })
-  role: string;
+  role: UserRole;
 
   @Column()
   username: string;
@@ -37,6 +60,7 @@ export class User {
 
   @Column({
     nullable: true,
+    type: "text",
   })
   bio?: string;
 
@@ -72,10 +96,9 @@ export class User {
 
   @Column({
     nullable: true,
+    type: "text",
   })
   skills?: string;
-
-  // NEW
 
   @Column({
     default: false,
@@ -88,8 +111,11 @@ export class User {
   isOnline: boolean;
 
   @Column({
-    type: "timestamp",
-    nullable: true,
+    type:
+      "timestamp",
+
+    nullable:
+      true,
   })
   lastSeen?: Date;
 
@@ -107,4 +133,14 @@ export class User {
     default: false,
   })
   isMuted: boolean;
+
+  @Column({
+    default: 0,
+  })
+  profileViews: number;
+
+  @Column({
+    default: 0,
+  })
+  engagementScore: number;
 }

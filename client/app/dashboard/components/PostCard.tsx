@@ -184,21 +184,21 @@ export default function PostCard({
     };
 
   const reportPost =
-    async () => {
-      try {
-        await API.post(
-          `/report/post/${post.id}`,
-        );
+  async () => {
+    try {
+      await API.patch(
+        `/posts/${post.id}/report`,
+      );
 
-        alert(
-          "Post reported",
-        );
-      } catch {
-        alert(
-          "Report failed",
-        );
-      }
-    };
+      alert(
+        "Post reported",
+      );
+    } catch {
+      alert(
+        "Report failed",
+      );
+    }
+  };
 
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 mb-6">
@@ -371,6 +371,26 @@ export default function PostCard({
         >
           ❤️ {count}
         </button>
+
+        <button
+  onClick={() =>
+    API.patch(
+      `/posts/${post.id}/report`,
+    )
+  }
+>
+  🚩
+</button>
+
+<button
+  onClick={() =>
+    API.patch(
+      `/posts/${post.id}/hide`,
+    )
+  }
+>
+  👁️
+</button>
 
         <button
           onClick={

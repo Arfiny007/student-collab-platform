@@ -11,18 +11,24 @@ import {
   Post,
   Query,
   Body,
+  BadRequestException,
 } from "@nestjs/common";
 
 import {
   FileInterceptor,
 } from "@nestjs/platform-express";
 
-import { PostService } from "./post.service";
+import {
+  PostService,
+} from "./post.service";
 
-import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
-import type { Multer } from "multer";
+import {
+  JwtAuthGuard,
+} from "../../auth/jwt-auth.guard";
 
-@Controller("posts")
+@Controller(
+  "posts",
+)
 export class PostController {
   constructor(
     private postService: PostService,
@@ -66,22 +72,31 @@ export class PostController {
     );
   }
 
-  @HttpPost()
   @UseGuards(
     JwtAuthGuard,
   )
+  @HttpPost()
   @UseInterceptors(
     FileInterceptor(
       "file",
       {
         dest:
           "./uploads",
+
+        limits: {
+          fileSize:
+            10 *
+            1024 *
+            1024,
+        },
       },
     ),
   )
-  create(
+  async create(
     @UploadedFile()
-    file: Express.Multer.File,
+    file:
+      | Express.Multer.File
+      | undefined,
 
     @Body()
     body: any,
@@ -89,6 +104,35 @@ export class PostController {
     @Req()
     req,
   ) {
+    if (
+      file
+    ) {
+      const allowed = [
+        "image/jpeg",
+        "image/png",
+        "application/pdf",
+      ];
+
+      if (
+        !allowed.includes(
+          file.mimetype,
+        )
+      ) {
+        throw new BadRequestException(
+          "Invalid file type",
+        );
+      }
+    }
+
+    if (
+      !body.title?.trim() &&
+      !body.content?.trim()
+    ) {
+      throw new BadRequestException(
+        "Post cannot be empty",
+      );
+    }
+
     return this.postService.create(
       body,
       req.user.userId,
@@ -123,12 +167,16 @@ export class PostController {
     @Req()
     req,
 
-    @Query("page")
+    @Query(
+      "page",
+    )
     page = 1,
   ) {
     return this.postService.findAll(
       req.user.userId,
-      Number(page),
+      Number(
+        page,
+      ),
     );
   }
 
@@ -145,18 +193,55 @@ export class PostController {
   hashtags() {
     return this.postService.trendingHashtags();
   }
+
   @UseGuards(
-  JwtAuthGuard,
-)
-@Get(
-  "saved/me",
-)
-saved(
-  @Req()
-  req,
-) {
-  return this.postService.getSavedPosts(
-    req.user.userId,
-  );
-}
+    JwtAuthGuard,
+  )
+  @Get(
+    "saved/me",
+  )
+  saved(
+    @Req()
+    req,
+  ) {
+    return this.postService.getSavedPosts(
+      req.user.userId,
+    );
+  }
+
+  // moderation
+
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Patch(
+    ":id/report",
+  )
+  report(
+    @Param("id")
+    id: string,
+  ) {
+    return this.postService.report(
+      Number(
+        id,
+      ),
+    );
+  }
+
+  @UseGuards(
+    JwtAuthGuard,
+  )
+  @Patch(
+    ":id/hide",
+  )
+  hide(
+    @Param("id")
+    id: string,
+  ) {
+    return this.postService.hide(
+      Number(
+        id,
+      ),
+    );
+  }
 }

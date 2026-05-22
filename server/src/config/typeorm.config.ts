@@ -11,6 +11,5 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
 
   synchronize: true,
 
-  // ✅ SAFE + DOCKER FRIENDLY
   entities: [join(__dirname, '/../**/*.entity.{js,ts}')],
 };

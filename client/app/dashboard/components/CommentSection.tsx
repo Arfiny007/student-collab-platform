@@ -17,20 +17,35 @@ export default function CommentSection({ postId }: any) {
     loadComments();
   }, []);
 
-  const addComment = async () => {
-  if (!text.trim()) {
-    alert("Comment cannot be empty");
-    return;
-  }
+const addComment =
+  async () => {
+    try {
+      if (
+        !text.trim()
+      ) {
+        return;
+      }
 
-  await API.post("/comments", {
-    content: text,
-    postId: postId, // ✅ explicit
-  });
+      await API.post(
+        "/comments",
+        {
+          content:
+            text,
+          postId,
+        },
+      );
 
-  setText("");
-  loadComments();
-};
+      setText(
+        "",
+      );
+
+      loadComments();
+    } catch {
+      alert(
+        "Failed to comment",
+      );
+    }
+  };
 
   return (
     <div className="mt-4">

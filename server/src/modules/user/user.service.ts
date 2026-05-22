@@ -14,7 +14,10 @@ import {
 
 import * as bcrypt from "bcrypt";
 
-import { User } from "./user.entity";
+import {
+  User,
+  UserRole,
+} from "./user.entity";
 
 import { Follow } from "./follow/follow.entity";
 
@@ -41,25 +44,52 @@ export class UserService {
   ) {}
 
   async register(
-    data: any,
+  data: any,
+) {
+  const exists =
+    await this.userRepo.findOne({
+      where: {
+        email:
+          data.email,
+      },
+    });
+
+  if (
+    exists
   ) {
-    const hashed =
-      await bcrypt.hash(
-        data.password,
-        10,
-      );
-
-    const user =
-      this.userRepo.create({
-        ...data,
-        password:
-          hashed,
-      });
-
-    return this.userRepo.save(
-      user,
+    throw new Error(
+      "Email already exists",
     );
   }
+
+  const hashed =
+    await bcrypt.hash(
+      data.password,
+      10,
+    );
+
+  const user =
+    this.userRepo.create({
+      email:
+        data.email,
+
+      username:
+        data.username,
+
+      phone:
+        data.phone,
+
+      password:
+        hashed,
+
+      role:
+        UserRole.USER,
+    });
+
+  return this.userRepo.save(
+    user,
+  );
+}
 
   async findByEmail(
     email: string,
@@ -295,52 +325,53 @@ export class UserService {
   );
 }
 
-async getAnalytics(
+
+async trackProfileView(
+  profileId: number,
+) {
+  const user =
+    await this.userRepo.findOne({
+      where: {
+        id: profileId,
+      },
+    });
+
+  if (!user) {
+    return;
+  }
+
+  user.profileViews += 1;
+
+  await this.userRepo.save(
+    user,
+  );
+}
+async analytics(
   userId: number,
 ) {
-  const followers =
-    await this.followRepo.count({
-      where: {
-        following: {
-          id: userId,
-        },
-      },
-    });
-
-  const posts =
-    await this.postRepo.count({
-      where: {
-        author: {
-          id: userId,
-        },
-      },
-    });
-
-  const myPosts =
-    await this.postRepo.find({
-      where: {
-        author: {
-          id: userId,
-        },
-      },
-    });
-
-  let totalViews = 0;
-
-  for (
-    const post of myPosts
-  ) {
-    totalViews +=
-      post.likes || 0;
-  }
+  const profile =
+    await this.getProfile(
+      userId,
+    );
 
   return {
     views:
-      totalViews,
+      profile.profileViews,
 
-    followers,
+    followers:
+      profile.followers,
 
-    posts,
+    posts:
+      profile.posts,
+
+    engagement:
+      profile.posts === 0
+        ? 0
+        : Math.round(
+            (profile.followers /
+              profile.posts) *
+              100,
+          ),
   };
 }
 }

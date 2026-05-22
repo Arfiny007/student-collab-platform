@@ -1,17 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import API from "../../../lib/api";
 
+import {
+  getSocket,
+} from "../../../lib/socket";
+
 export default function Navbar() {
-  const [open, setOpen] =
-    useState(false);
+  const [
+    open,
+    setOpen,
+  ] =
+    useState(
+      false,
+    );
 
-  const [notifications, setNotifications] =
-    useState<any[]>([]);
+  const [
+    notifications,
+    setNotifications,
+  ] =
+    useState<
+      any[]
+    >([]);
 
-  const [unread, setUnread] =
-    useState(0);
+  const [
+    unread,
+    setUnread,
+  ] =
+    useState(
+      0,
+    );
 
   useEffect(() => {
     const load =
@@ -38,77 +61,45 @@ export default function Navbar() {
       };
 
     load();
-  }, []);
 
-  useEffect(() => {
-    let socket: any;
+    const socket =
+      getSocket();
 
-    const connect =
-      async () => {
-        const userId =
-          localStorage.getItem(
-            "userId",
-          );
-
-        if (!userId)
-          return;
-
-        const {
-          io,
-        } =
-          await import(
-            "socket.io-client",
-          );
-
-        socket =
-          io(
-            "http://localhost:5000",
-            {
-              query: {
-                userId,
-              },
-              transports: [
-                "websocket",
-              ],
-            },
-          );
-
-        socket.on(
-          "notification",
+    socket.on(
+      "notification",
+      (
+        msg,
+      ) => {
+        setNotifications(
           (
-            msg: string,
-          ) => {
-            setNotifications(
-              (
-                prev,
-              ) => [
-                {
-                  id:
-                    Date.now(),
-                  message:
-                    msg,
-                  isRead:
-                    false,
-                },
-                ...prev,
-              ],
-            );
-
-            setUnread(
-              (
-                prev,
-              ) =>
-                prev +
-                1,
-            );
-          },
+            prev,
+          ) => [
+            {
+              id:
+                Date.now(),
+              message:
+                msg,
+              isRead:
+                false,
+            },
+            ...prev,
+          ],
         );
-      };
 
-    connect();
+        setUnread(
+          (
+            prev,
+          ) =>
+            prev +
+            1,
+        );
+      },
+    );
 
     return () => {
-      socket?.disconnect();
+      socket.off(
+        "notification",
+      );
     };
   }, []);
 
@@ -116,40 +107,44 @@ export default function Navbar() {
     async (
       id: number,
     ) => {
-      await API.patch(
-        `/notifications/${id}`,
-      );
+      try {
+        await API.patch(
+          `/notifications/${id}`,
+        );
 
-      setNotifications(
-        (
-          prev,
-        ) =>
-          prev.map(
-            (
-              n,
-            ) =>
-              n.id ===
-              id
-                ? {
-                    ...n,
-                    isRead:
-                      true,
-                  }
-                : n,
-          ),
-      );
+        setNotifications(
+          (
+            prev,
+          ) =>
+            prev.map(
+              (
+                n,
+              ) =>
+                n.id ===
+                id
+                  ? {
+                      ...n,
+                      isRead:
+                        true,
+                    }
+                  : n,
+            ),
+        );
 
-      setUnread(
-        (
-          prev,
-        ) =>
-          Math.max(
-            prev -
-              1,
-            0,
-          ),
-      );
+        setUnread(
+          (
+            prev,
+          ) =>
+            Math.max(
+              prev -
+                1,
+              0,
+            ),
+        );
+      } catch {}
     };
+
+
 
   return (
     <div className="bg-white dark:bg-gray-900 shadow px-8 py-4 flex justify-between items-center">
@@ -222,9 +217,20 @@ export default function Navbar() {
                       n.message
                     }
                   </div>
+                  
                 ),
               )}
+              <button
+  onClick={() =>
+    API.patch(
+      "/notifications/read-all",
+    )
+  }
 
+  className="p-3 text-blue-600"
+>
+  Mark all as read
+</button>
             </div>
           )}
 

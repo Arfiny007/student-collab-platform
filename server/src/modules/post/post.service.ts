@@ -18,6 +18,7 @@ import { Poll } from "./poll.entity";
 import { Vote } from "./vote.entity";
 import { Follow } from "../user/follow/follow.entity";
 import { Save } from "./save.entity";
+import { Multer } from "multer";
 
 @Injectable()
 export class PostService {
@@ -406,114 +407,138 @@ export class PostService {
     };
   }
 
-  async findAll(
-    userId: number,
-    page = 1,
-  ) {
-    const limit = 5;
+async findAll(
+  userId: number,
+  page = 1,
+) {
+  const limit = 5;
 
-    const posts =
-      await this.postRepo.find({
-        relations: [
-          "author",
-          "polls",
-        ],
-        take:
-          limit,
-        skip:
-          (page - 1) *
-          limit,
-        order: {
-          id: "DESC",
-        },
-      });
+  const posts =
+    await this.postRepo.find({
+      where: {
+        hidden: false,
+      },
 
-    return Promise.all(
-      posts.map(
-        async (
-          post,
-        ) => {
-          const likeCount =
-            await this.likeRepo.count({
-              where:
-                {
-                  post:
-                    {
-                      id:
-                        post.id,
-                    },
-                },
-            });
+      relations: [
+        "author",
+        "polls",
+      ],
 
-          const liked =
-            await this.likeRepo.findOne({
-              where:
-                {
-                  post:
-                    {
-                      id:
-                        post.id,
-                    },
-                  user:
-                    {
-                      id:
-                        userId,
-                    },
-                },
-            });
+      take:
+        limit,
 
-          const saved =
-            await this.saveRepo.findOne({
-              where:
-                {
-                  post:
-                    {
-                      id:
-                        post.id,
-                    },
-                  user:
-                    {
-                      id:
-                        userId,
-                    },
-                },
-            });
+      skip:
+        (page - 1) *
+        limit,
 
-          const isFollowing =
-            await this.followRepo.findOne({
-              where:
-                {
-                  follower:
-                    {
-                      id:
-                        userId,
-                    },
-                  following:
-                    {
-                      id:
-                        post
-                          .author
-                          .id,
-                    },
-                },
-            });
+      order: {
+        id: "DESC",
+      },
+    });
 
-          return {
-            ...post,
-            likeCount,
-            liked:
-              !!liked,
-            saved:
-              !!saved,
-            isFollowing:
-              !!isFollowing,
-            shareUrl:
-              `http://localhost:3000/post/${post.id}`,
-          };
-        },
-      ),
-    );
-  }
+  return Promise.all(
+    posts.map(
+      async (
+        post,
+      ) => {
+        const likeCount =
+          await this.likeRepo.count({
+            where: {
+              post: {
+                id:
+                  post.id,
+              },
+            },
+          });
+
+        const liked =
+          await this.likeRepo.findOne({
+            where: {
+              post: {
+                id:
+                  post.id,
+              },
+
+              user: {
+                id:
+                  userId,
+              },
+            },
+          });
+
+        const saved =
+          await this.saveRepo.findOne({
+            where: {
+              post: {
+                id:
+                  post.id,
+              },
+
+              user: {
+                id:
+                  userId,
+              },
+            },
+          });
+
+        const isFollowing =
+          await this.followRepo.findOne({
+            where: {
+              follower: {
+                id:
+                  userId,
+              },
+
+              following: {
+                id:
+                  post
+                    .author
+                    .id,
+              },
+            },
+          });
+
+        const polls =
+          post.polls?.map(
+            (
+              poll,
+            ) => ({
+              ...poll,
+
+              votes:
+                poll
+                  .votes ||
+                0,
+            }),
+          ) || [];
+
+        return {
+          ...post,
+
+          polls,
+
+          likeCount,
+
+          liked:
+            !!liked,
+
+          saved:
+            !!saved,
+
+          isFollowing:
+            !!isFollowing,
+
+          shareUrl:
+            `${
+              process.env
+                .FRONTEND_URL ||
+              "http://localhost:3000"
+            }/post/${post.id}`,
+        };
+      },
+    ),
+  );
+}
 
   async explore() {
     return this.postRepo.find({
@@ -595,6 +620,58 @@ export class PostService {
 
   return saves.map(
     (x) => x.post,
+  );
+}
+
+async report(
+  id: number,
+) {
+  const post =
+    await this.postRepo.findOne(
+      {
+        where: {
+          id,
+        },
+      },
+    );
+
+  if (
+    !post
+  ) {
+    throw new NotFoundException();
+  }
+
+  post.reports +=
+    1;
+
+  return this.postRepo.save(
+    post,
+  );
+}
+
+async hide(
+  id: number,
+) {
+  const post =
+    await this.postRepo.findOne(
+      {
+        where: {
+          id,
+        },
+      },
+    );
+
+  if (
+    !post
+  ) {
+    throw new NotFoundException();
+  }
+
+  post.hidden =
+    !post.hidden;
+
+  return this.postRepo.save(
+    post,
   );
 }
 }

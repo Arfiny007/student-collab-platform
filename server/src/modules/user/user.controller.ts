@@ -116,20 +116,7 @@ export class UserController {
   stories() {
     return this.userService.getStories();
   }
-  @UseGuards(
-  JwtAuthGuard,
-)
-@Get(
-  "analytics",
-)
-analytics(
-  @Req()
-  req,
-) {
-  return this.userService.getAnalytics(
-    req.user.userId,
-  );
-}
+  
 
   @UseGuards(
     JwtAuthGuard,
@@ -173,20 +160,36 @@ saved(
     req.user.userId,
   );
 }
+@UseGuards(
+  JwtAuthGuard,
+)
+@Get(
+  "analytics",
+)
+analytics(
+  @Req()
+  req,
+) {
+  return this.userService.analytics(
+    req.user.userId,
+  );
+}
 
   @Get(
-    ":id",
-  )
-  profile(
-    @Param("id")
-    id: string,
-  ) {
-    return this.userService.getProfile(
-      Number(
-        id,
-      ),
-    );
-  }
+  ":id",
+)
+async profile(
+  @Param("id")
+  id: string,
+) {
+  await this.userService.trackProfileView(
+    Number(id),
+  );
+
+  return this.userService.getProfile(
+    Number(id),
+  );
+}
 
   @Get(
     ":id/posts",
@@ -201,4 +204,5 @@ saved(
       ),
     );
   }
+  
 }

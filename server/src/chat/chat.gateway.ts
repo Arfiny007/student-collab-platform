@@ -3,7 +3,6 @@ import {
   WebSocketServer,
   SubscribeMessage,
   MessageBody,
-  ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from "@nestjs/websockets";
@@ -12,6 +11,8 @@ import {
   Server,
   Socket,
 } from "socket.io";
+
+import * as jwt from "jsonwebtoken";
 
 @WebSocketGateway({
   cors: {
@@ -27,20 +28,35 @@ export class ChatGateway
   server!: Server;
 
   private onlineUsers =
-    new Map();
+    new Map<number, boolean>();
 
   handleConnection(
     client: Socket,
   ) {
-    const userId =
-      Number(
-        client.handshake
-          .query.userId,
-      );
+    try {
+      const token =
+        client.handshake.auth
+          ?.token;
 
-    if (
-      userId
-    ) {
+      if (!token) {
+        client.disconnect();
+        return;
+      }
+
+      const decoded: any =
+        jwt.verify(
+          token,
+          process.env
+            .JWT_SECRET ||
+            "supersecret",
+        );
+
+      const userId =
+        decoded.sub;
+
+      client.data.userId =
+        userId;
+
       client.join(
         `chat-${userId}`,
       );
@@ -50,12 +66,9 @@ export class ChatGateway
         true,
       );
 
-      this.server.emit(
-        "online-users",
-        Array.from(
-          this.onlineUsers.keys(),
-        ),
-      );
+      this.broadcastUsers();
+    } catch {
+      client.disconnect();
     }
   }
 
@@ -63,15 +76,18 @@ export class ChatGateway
     client: Socket,
   ) {
     const userId =
-      Number(
-        client.handshake
-          .query.userId,
+      client.data.userId;
+
+    if (userId) {
+      this.onlineUsers.delete(
+        userId,
       );
 
-    this.onlineUsers.delete(
-      userId,
-    );
+      this.broadcastUsers();
+    }
+  }
 
+  private broadcastUsers() {
     this.server.emit(
       "online-users",
       Array.from(

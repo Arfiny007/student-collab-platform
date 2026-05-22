@@ -4,17 +4,26 @@ import {
   Column,
   ManyToOne,
   CreateDateColumn,
+  Index,
 } from "typeorm";
 
-import { User } from "../modules/user/user.entity";
+import {
+  User,
+} from "../modules/user/user.entity";
 
 @Entity()
+
+@Index([
+  "createdAt",
+])
+
 export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({
     nullable: true,
+    type: "text",
   })
   text?: string;
 

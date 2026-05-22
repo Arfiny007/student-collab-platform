@@ -4,11 +4,19 @@ import {
   Column,
   ManyToOne,
   CreateDateColumn,
+  Index,
 } from "typeorm";
 
-import { User } from "./user.entity";
+import {
+  User,
+} from "./user.entity";
 
 @Entity()
+
+@Index([
+  "createdAt",
+])
+
 export class Story {
   @PrimaryGeneratedColumn()
   id: number;

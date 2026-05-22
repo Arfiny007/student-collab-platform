@@ -40,7 +40,7 @@ export default function StoriesBar() {
               <img
                 src={
                   u.avatar
-                    ? `http://localhost:5000/${u.avatar}`
+                    ? `${process.env.NEXT_PUBLIC_API_URL}/${u.avatar}`
                     : "https://placehold.co/100"
                 }
                 className="w-16 h-16 rounded-full ring-4 ring-purple-500 object-cover"
