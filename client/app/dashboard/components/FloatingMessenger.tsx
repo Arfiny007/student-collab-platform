@@ -7,6 +7,9 @@ import {
 } from "react";
 
 import API from "../../../lib/api";
+import {
+  getSocket,
+} from "../../../lib/socket";
 
 export default function FloatingMessenger() {
   const fileRef =
@@ -46,12 +49,21 @@ export default function FloatingMessenger() {
     "👍",
     "🚀",
   ];
+  useEffect(() => {
+  scrollRef.current?.scrollIntoView({
+    behavior:
+      "smooth",
+  });
+}, [messages]);
 
   useEffect(() => {
-    let liveSocket: any;
 
-    const init =
-      async () => {
+  let liveSocket: any;
+
+  const init =
+    async () => {
+      try {
+
         const me =
           Number(
             localStorage.getItem(
@@ -59,15 +71,18 @@ export default function FloatingMessenger() {
             ),
           );
 
-        setMyId(me);
+        setMyId(
+          me,
+        );
 
         const saved =
           localStorage.getItem(
             "chatUser",
           );
 
-        if (!saved)
+        if (!saved) {
           return;
+        }
 
         const user =
           JSON.parse(
@@ -87,23 +102,16 @@ export default function FloatingMessenger() {
           history.data,
         );
 
-        const {
-          io,
-        } =
-          await import(
-            "socket.io-client",
-          );
-
         liveSocket =
-          io(
-            "http://localhost:5000",
-            {
-              query: {
-                userId:
-                  me,
-              },
-            },
-          );
+          getSocket();
+
+        liveSocket.off(
+          "message",
+        );
+
+        liveSocket.off(
+          "typing",
+        );
 
         liveSocket.on(
           "message",
@@ -114,6 +122,7 @@ export default function FloatingMessenger() {
               (
                 prev,
               ) => {
+
                 const exists =
                   prev.find(
                     (
@@ -141,6 +150,7 @@ export default function FloatingMessenger() {
         liveSocket.on(
           "typing",
           () => {
+
             setTyping(
               true,
             );
@@ -163,19 +173,31 @@ export default function FloatingMessenger() {
         setSocket(
           liveSocket,
         );
-      };
 
-    init();
+      } catch (
+        err
+      ) {
+        console.error(
+          "chat init failed",
+          err,
+        );
+      }
+    };
 
-    const openChat =
-      async () => {
+  init();
+
+  const openChat =
+    async () => {
+      try {
+
         const saved =
           localStorage.getItem(
             "chatUser",
           );
 
-        if (!saved)
+        if (!saved) {
           return;
+        }
 
         const user =
           JSON.parse(
@@ -198,35 +220,44 @@ export default function FloatingMessenger() {
         setOpen(
           true,
         );
-      };
 
-    window.addEventListener(
+      } catch (
+        err
+      ) {
+        console.error(
+          "open chat failed",
+          err,
+        );
+      }
+    };
+
+  window.addEventListener(
+    "open-chat",
+    openChat,
+  );
+
+  return () => {
+
+    clearTimeout(
+      typingTimer.current,
+    );
+
+    window.removeEventListener(
       "open-chat",
       openChat,
     );
 
-    return () => {
-      clearTimeout(
-        typingTimer.current,
-      );
-
-      window.removeEventListener(
-        "open-chat",
-        openChat,
-      );
-
-      liveSocket?.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView(
-      {
-        behavior:
-          "smooth",
-      },
+    liveSocket?.off(
+      "message",
     );
-  }, [messages]);
+
+    liveSocket?.off(
+      "typing",
+    );
+
+  };
+
+}, []);
 
   const send =
     async () => {
@@ -447,7 +478,7 @@ export default function FloatingMessenger() {
   <img
     src={
       chatUser.avatar
-        ? `http://localhost:5000/${chatUser.avatar}`
+        ? `${process.env.NEXT_PUBLIC_API_URL}/${chatUser.avatar}`
         : "https://placehold.co/100"
     }
     className="w-10 h-10 rounded-full"
@@ -515,7 +546,7 @@ export default function FloatingMessenger() {
 
                         {m.file && (
                           <a
-                            href={`http://localhost:5000/${m.file}`}
+                            href={`${process.env.NEXT_PUBLIC_API_URL}/${m.file}`}
                             target="_blank"
                             className="block mt-2 underline"
                           >

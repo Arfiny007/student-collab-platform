@@ -1,47 +1,143 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Notification } from './notification.entity';
-import { Repository } from 'typeorm';
-import { User } from '../modules/user/user.entity';
+import {
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+
+import {
+  InjectRepository,
+} from "@nestjs/typeorm";
+
+import {
+  Notification,
+} from "./notification.entity";
+
+import {
+  Repository,
+} from "typeorm";
+
+import {
+  User,
+} from "../modules/user/user.entity";
 
 @Injectable()
 export class NotificationService {
   constructor(
-    @InjectRepository(Notification)
+    @InjectRepository(
+      Notification,
+    )
     private notifRepo: Repository<Notification>,
 
-    @InjectRepository(User)
+    @InjectRepository(
+      User,
+    )
     private userRepo: Repository<User>,
   ) {}
 
-  async create(userId: number, message: string) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+  async create(
+    userId: number,
+    message: string,
+  ) {
+    const user =
+      await this.userRepo.findOne(
+        {
+          where: {
+            id:
+              userId,
+          },
+        },
+      );
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(
+        "User not found",
+      );
     }
 
-    const notif = this.notifRepo.create({
-      message,
-      user,
-    });
+    const notif =
+      this.notifRepo.create(
+        {
+          message,
 
-    return this.notifRepo.save(notif);
+          user,
+        },
+      );
+
+    return this.notifRepo.save(
+      notif,
+    );
   }
 
-  findUserNotifications(userId: number) {
-    return this.notifRepo.find({
-      where: { user: { id: userId } },
-      order: { id: 'DESC' },
-    });
+  async findUserNotifications(
+    userId: number,
+  ) {
+    return this.notifRepo.find(
+      {
+        where: {
+          user: {
+            id:
+              userId,
+          },
+        },
+
+        order: {
+          createdAt:
+            "DESC",
+        },
+      },
+    );
   }
 
-  async markAsRead(id: number) {
-    const notif = await this.notifRepo.findOne({ where: { id } });
+  async markAsRead(
+    id: number,
+  ) {
+    const notif =
+      await this.notifRepo.findOne(
+        {
+          where: {
+            id,
+          },
+        },
+      );
 
-    if (!notif) throw new NotFoundException();
+    if (
+      !notif
+    ) {
+      throw new NotFoundException(
+        "Notification not found",
+      );
+    }
 
-    notif.isRead = true;
-    return this.notifRepo.save(notif);
+    notif.isRead =
+      true;
+
+    return this.notifRepo.save(
+      notif,
+    );
+  }
+
+  async markAllAsRead(
+    userId: number,
+  ) {
+    await this.notifRepo.update(
+      {
+        user: {
+          id:
+            userId,
+        },
+
+        isRead:
+          false,
+      },
+
+      {
+        isRead:
+          true,
+      },
+    );
+
+    return {
+      success:
+        true,
+    };
   }
 }

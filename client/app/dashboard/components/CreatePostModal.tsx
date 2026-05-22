@@ -70,7 +70,18 @@ export default function CreatePostModal({
   };
 
   const handleCreate =
-    async () => {
+  async () => {
+    try {
+      if (
+        !title.trim() &&
+        !content.trim()
+      ) {
+        alert(
+          "Post cannot be empty",
+        );
+        return;
+      }
+
       const formData =
         new FormData();
 
@@ -84,7 +95,21 @@ export default function CreatePostModal({
         content,
       );
 
-      if (file) {
+      if (
+        file
+      ) {
+        if (
+          file.size >
+          10 *
+            1024 *
+            1024
+        ) {
+          alert(
+            "File too large",
+          );
+          return;
+        }
+
         formData.append(
           "file",
           file,
@@ -93,8 +118,11 @@ export default function CreatePostModal({
 
       const cleanOptions =
         options.filter(
-          (o) =>
-            o.trim() !== "",
+          (
+            o,
+          ) =>
+            o.trim() !==
+            "",
         );
 
       if (
@@ -109,20 +137,23 @@ export default function CreatePostModal({
         );
       }
 
-      // 🔥 IMPORTANT
       const res =
         await API.post(
           "/posts",
           formData,
         );
 
-      // 🔥 IMPORTANT
       refresh(
         res.data,
       );
 
       onClose();
-    };
+    } catch {
+      alert(
+        "Failed to create post",
+      );
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">

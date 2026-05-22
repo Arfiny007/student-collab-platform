@@ -10,6 +10,7 @@ import {
   UseGuards,
   UploadedFile,
   UseInterceptors,
+  BadRequestException,
 } from "@nestjs/common";
 
 import {
@@ -30,7 +31,6 @@ export class ChatController {
     private chatService: ChatService,
   ) {}
 
-  // SEND MESSAGE
   @UseGuards(
     JwtAuthGuard,
   )
@@ -41,10 +41,17 @@ export class ChatController {
       {
         dest:
           "./uploads",
+
+        limits: {
+          fileSize:
+            10 *
+            1024 *
+            1024,
+        },
       },
     ),
   )
-  send(
+  async send(
     @Param("id")
     id: string,
 
@@ -57,6 +64,24 @@ export class ChatController {
     @UploadedFile()
     file?: Express.Multer.File,
   ) {
+    if (file) {
+      const allowed = [
+        "image/jpeg",
+        "image/png",
+        "application/pdf",
+      ];
+
+      if (
+        !allowed.includes(
+          file.mimetype,
+        )
+      ) {
+        throw new BadRequestException(
+          "Invalid file type",
+        );
+      }
+    }
+
     return this.chatService.send(
       req.user.userId,
       Number(id),
@@ -65,7 +90,6 @@ export class ChatController {
     );
   }
 
-  // REACTION
   @UseGuards(
     JwtAuthGuard,
   )
@@ -85,7 +109,6 @@ export class ChatController {
     );
   }
 
-  // PIN
   @UseGuards(
     JwtAuthGuard,
   )
@@ -101,7 +124,6 @@ export class ChatController {
     );
   }
 
-  // ARCHIVE
   @UseGuards(
     JwtAuthGuard,
   )
@@ -117,7 +139,6 @@ export class ChatController {
     );
   }
 
-  // EDIT
   @UseGuards(
     JwtAuthGuard,
   )
@@ -137,7 +158,6 @@ export class ChatController {
     );
   }
 
-  // DELETE
   @UseGuards(
     JwtAuthGuard,
   )
@@ -153,7 +173,6 @@ export class ChatController {
     );
   }
 
-  // RECENT CHATS
   @UseGuards(
     JwtAuthGuard,
   )
@@ -167,7 +186,6 @@ export class ChatController {
     );
   }
 
-  // CHAT HISTORY
   @UseGuards(
     JwtAuthGuard,
   )

@@ -206,7 +206,7 @@ const muteUser =
           </div>
 
           {/* STATS */}
-          <div className="grid grid-cols-3 gap-5 mt-8">
+          <div className="grid grid-cols-4 gap-5 mt-8">
 
             <div className="bg-blue-50 p-5 rounded-2xl text-center">
               <p className="text-3xl font-bold">
@@ -219,6 +219,17 @@ const muteUser =
                 Posts
               </p>
             </div>
+            <div className="bg-green-50 p-5 rounded-2xl text-center">
+
+  <p className="text-3xl font-bold">
+    {user.profileViews}
+  </p>
+
+  <p>
+    Views
+  </p>
+
+</div>
 
             <div
               onClick={() =>

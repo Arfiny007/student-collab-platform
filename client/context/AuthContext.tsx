@@ -14,7 +14,11 @@ export const AuthContext = createContext<AuthType>({
   logout: () => {},
 });
 
-export function AuthProvider({ children }: any) {
+export function AuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [token, setTokenState] = useState<string | null>(null);
 
   useEffect(() => {

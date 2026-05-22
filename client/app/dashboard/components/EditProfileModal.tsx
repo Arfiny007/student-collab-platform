@@ -26,7 +26,7 @@ export default function EditProfileModal({
   const [preview, setPreview] =
     useState<string | null>(
       user.avatar
-        ? `http://localhost:5000/${user.avatar}`
+        ? `${process.env.NEXT_PUBLIC_API_URL}/${user.avatar}`
         : null,
     );
 
