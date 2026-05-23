@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useContext } from "react";
+import { useState, useContext, FormEvent } from "react";
+import Link from "next/link";
 import API from "../../lib/api";
 import { AuthContext } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import AuthShell from "../auth/components/AuthShell";
+import AuthFormField from "../auth/components/AuthFormField";
+import PasswordField from "../auth/components/PasswordField";
 
 export default function Login() {
   const { login } = useContext(AuthContext);
@@ -12,10 +19,21 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {},
+  );
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      alert("Please fill all fields");
+  const validate = () => {
+    const next: { email?: string; password?: string } = {};
+    if (!email.trim()) next.email = "Email is required";
+    if (!password) next.password = "Password is required";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleLogin = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (!validate()) {
       return;
     }
 
@@ -26,81 +44,101 @@ export default function Login() {
 
       const token = res.data.access_token;
 
-      // ✅ IMPORTANT FIX (this was missing reliability)
       localStorage.setItem("token", token);
 
-      // decode user id
       const payload = JSON.parse(atob(token.split(".")[1]));
       localStorage.setItem("userId", payload.sub);
 
-      // context login
       login(token);
 
       router.push("/dashboard");
-    } catch (err) {
-      alert("Invalid credentials");
+    } catch {
+      toast.error("Invalid credentials");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="h-screen grid grid-cols-1 md:grid-cols-2">
-
-      {/* LEFT SIDE */}
-      <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 text-white p-10">
-        <h1 className="text-5xl font-bold mb-6">
-          StudentHub 🚀
-        </h1>
-        <p className="text-lg opacity-90 text-center max-w-md">
-          Connect, collaborate, and build amazing projects with students worldwide.
-        </p>
-      </div>
-
-      {/* RIGHT SIDE */}
-      <div className="flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-10 rounded-2xl shadow-xl w-[380px]">
-
-          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-            Welcome Back 👋
-          </h2>
-
-          {/* EMAIL */}
-          <input
-            className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Email"
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          {/* PASSWORD */}
-          <input
-            type="password"
-            className="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Password"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          {/* BUTTON */}
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition disabled:opacity-50"
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to continue to your campus workspace."
+      footer={
+        <p>
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            {loading ? "Logging in..." : "Login"}
-          </button>
+            Create account
+          </Link>
+        </p>
+      }
+    >
+      <form
+        onSubmit={handleLogin}
+        className="space-y-5"
+        noValidate
+      >
+        <AuthFormField
+          id="login-email"
+          name="email"
+          type="email"
+          label="Email"
+          placeholder="you@university.edu"
+          autoComplete="email"
+          value={email}
+          required
+          error={errors.email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+          }}
+        />
 
-          {/* REGISTER */}
-          <p className="text-sm text-gray-500 mt-5 text-center">
-            Don’t have an account?
-            <span
-              onClick={() => router.push("/register")}
-              className="text-blue-600 cursor-pointer ml-1 hover:underline"
+        <div className="space-y-2">
+          <PasswordField
+            id="login-password"
+            label="Password"
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            value={password}
+            required
+            error={errors.password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (errors.password)
+                setErrors((prev) => ({ ...prev, password: undefined }));
+            }}
+          />
+          <div className="flex justify-end">
+            <Link
+              href="/forgot"
+              className="text-caption font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              Register
-            </span>
-          </p>
+              Forgot password?
+            </Link>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <Button
+          type="submit"
+          variant="brand"
+          size="lg"
+          disabled={loading}
+          className="mt-2 h-11 w-full"
+          aria-busy={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Signing in…
+            </>
+          ) : (
+            "Sign in"
+          )}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

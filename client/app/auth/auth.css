@@ -1,0 +1,101 @@
+/* Auth-scoped animated background — imported only by auth pages */
+
+.auth-scene {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.auth-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--gradient-mesh);
+  background-attachment: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(72px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+.auth-orb--1 {
+  width: min(420px, 70vw);
+  height: min(420px, 70vw);
+  top: -12%;
+  left: -8%;
+  background: oklch(0.55 0.2 278 / 35%);
+  animation: auth-orb-drift-1 22s ease-in-out infinite alternate;
+}
+
+.auth-orb--2 {
+  width: min(360px, 60vw);
+  height: min(360px, 60vw);
+  bottom: -8%;
+  right: -6%;
+  background: oklch(0.62 0.14 200 / 30%);
+  animation: auth-orb-drift-2 26s ease-in-out infinite alternate;
+}
+
+.auth-orb--3 {
+  width: min(280px, 50vw);
+  height: min(280px, 50vw);
+  top: 42%;
+  left: 38%;
+  background: oklch(0.58 0.18 265 / 22%);
+  animation: auth-orb-drift-3 18s ease-in-out infinite alternate;
+}
+
+.dark .auth-orb--1 {
+  background: oklch(0.5 0.2 278 / 28%);
+  opacity: 0.7;
+}
+
+.dark .auth-orb--2 {
+  background: oklch(0.55 0.14 200 / 24%);
+}
+
+.dark .auth-orb--3 {
+  background: oklch(0.48 0.16 265 / 18%);
+}
+
+@keyframes auth-orb-drift-1 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(6%, 8%) scale(1.06);
+  }
+}
+
+@keyframes auth-orb-drift-2 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(-8%, -5%) scale(1.08);
+  }
+}
+
+@keyframes auth-orb-drift-3 {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(4%, -6%) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-orb {
+    animation: none;
+  }
+}

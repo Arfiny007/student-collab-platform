@@ -1,93 +1,167 @@
 "use client";
 
-import { useState } from "react";
+import { useState, FormEvent } from "react";
+import Link from "next/link";
 import API from "../../lib/api";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import AuthShell from "../auth/components/AuthShell";
+import AuthFormField from "../auth/components/AuthFormField";
+import PasswordField from "../auth/components/PasswordField";
+
+type FormState = {
+  email: string;
+  password: string;
+  username: string;
+  phone: string;
+};
+
+type FormErrors = Partial<Record<keyof FormState, string>>;
 
 export default function Register() {
   const router = useRouter();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     email: "",
     password: "",
     username: "",
     phone: "",
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    if (errors[name as keyof FormState]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
-  const handleRegister = async () => {
+  const validate = () => {
+    const next: FormErrors = {};
+    if (!form.username.trim()) next.username = "Username is required";
+    if (!form.email.trim()) next.email = "Email is required";
+    if (!form.phone.trim()) next.phone = "Phone is required";
+    if (!form.password) next.password = "Password is required";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleRegister = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (!validate()) return;
+
     try {
-        console.log("FORM DATA:", form);
+      setLoading(true);
+      console.log("FORM DATA:", form);
       await API.post("/users/register", form);
-      alert("Registered successfully");
+      toast.success("Registered successfully");
       router.push("/login");
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Error");
+    } catch (err: unknown) {
+      const message =
+        err &&
+        typeof err === "object" &&
+        "response" in err &&
+        err.response &&
+        typeof err.response === "object" &&
+        "data" in err.response &&
+        err.response.data &&
+        typeof err.response.data === "object" &&
+        "message" in err.response.data &&
+        typeof (err.response.data as { message?: string }).message === "string"
+          ? (err.response.data as { message: string }).message
+          : "Error";
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="h-screen grid grid-cols-2">
-      
-      {/* LEFT SIDE (Branding) */}
-      <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-blue-600 to-purple-700 text-white p-10">
-        <h1 className="text-4xl font-bold mb-4">
-          Student Collab 🚀
-        </h1>
-        <p className="text-lg text-center max-w-md opacity-80">
-          Build, collaborate and grow with developers worldwide.
-        </p>
-      </div>
-
-      {/* RIGHT SIDE */}
-      <div className="flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-10 rounded-2xl shadow-xl w-[400px]">
-
-          <h2 className="text-2xl font-bold mb-6 text-center">
-            Create Account
-          </h2>
-
-          <input
-            name="username"
-            placeholder="Username"
-            className="w-full p-3 border rounded-lg mb-3"
-            onChange={handleChange}
-          />
-
-          <input
-            name="email"
-            placeholder="Email"
-            className="w-full p-3 border rounded-lg mb-3"
-            onChange={handleChange}
-          />
-
-          <input
-            name="phone"
-            placeholder="Phone"
-            className="w-full p-3 border rounded-lg mb-3"
-            onChange={handleChange}
-          />
-
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            className="w-full p-3 border rounded-lg mb-6"
-            onChange={handleChange}
-          />
-
-          <button
-            onClick={handleRegister}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+    <AuthShell
+      title="Create your account"
+      subtitle="Join your campus community in a few steps."
+      brandingDescription="Build, collaborate, and grow with students and mentors in one secure academic hub."
+      footer={
+        <p>
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            Register
-          </button>
+            Sign in
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleRegister} className="space-y-4" noValidate>
+        <AuthFormField
+          name="username"
+          label="Username"
+          placeholder="your_username"
+          autoComplete="username"
+          value={form.username}
+          required
+          error={errors.username}
+          onChange={handleChange}
+        />
 
-        </div>
-      </div>
-    </div>
+        <AuthFormField
+          name="email"
+          type="email"
+          label="Email"
+          placeholder="you@university.edu"
+          autoComplete="email"
+          value={form.email}
+          required
+          error={errors.email}
+          onChange={handleChange}
+        />
+
+        <AuthFormField
+          name="phone"
+          type="tel"
+          label="Phone"
+          placeholder="+1 555 000 0000"
+          autoComplete="tel"
+          value={form.phone}
+          required
+          error={errors.phone}
+          onChange={handleChange}
+        />
+
+        <PasswordField
+          name="password"
+          label="Password"
+          placeholder="Create a strong password"
+          autoComplete="new-password"
+          value={form.password}
+          required
+          error={errors.password}
+          onChange={handleChange}
+        />
+
+        <Button
+          type="submit"
+          variant="brand"
+          size="lg"
+          disabled={loading}
+          className="mt-2 h-11 w-full"
+          aria-busy={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Creating account…
+            </>
+          ) : (
+            "Create account"
+          )}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
