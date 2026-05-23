@@ -198,6 +198,7 @@ export default function PostCard({
             <img
               src={avatarSrc}
               alt=""
+              aria-hidden="true"
               className="relative m-[2px] size-11 rounded-full border-2 border-background object-cover sm:size-12"
             />
           </button>
@@ -246,7 +247,7 @@ export default function PostCard({
           <img
             src={getMediaUrl(post.image) || ""}
             loading="lazy"
-            alt=""
+            alt={post.title ? `Image for ${post.title}` : "Post image"}
             className="w-full object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out-expo)] hover:scale-[1.01]"
           />
         </div>

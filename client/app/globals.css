@@ -266,13 +266,13 @@
   }
 
   html {
-    @apply font-sans antialiased scroll-smooth;
+    @apply font-sans antialiased scroll-smooth overflow-x-hidden;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
 
   body {
-    @apply bg-background text-foreground min-h-screen;
+    @apply bg-background text-foreground min-h-screen overflow-x-hidden;
     background-image: var(--gradient-mesh);
     background-attachment: fixed;
   }

@@ -136,7 +136,25 @@ export default function MessagesPage() {
     myIdRef.current = myId;
   }, [myId]);
 
+  const openChat = useCallback(async (user: any) => {
+    setChatUser(user);
+    chatUserRef.current = user;
+    setLoadingChat(true);
+    localStorage.setItem("chatUser", JSON.stringify(user));
+    emitChatUserChanged(user);
+
+    try {
+      const res = await API.get(`/chat/${user.id}`);
+      setMessages(res.data);
+      emitChatMessagesSynced(user.id, res.data);
+    } finally {
+      setLoadingChat(false);
+    }
+  }, []);
+
   useEffect(() => {
+    let cancelled = false;
+
     const me = Number(localStorage.getItem("userId"));
     setMyId(me);
     myIdRef.current = me;
@@ -144,6 +162,7 @@ export default function MessagesPage() {
     const init = async () => {
       try {
         const chats = await API.get("/chat");
+        if (cancelled) return;
         setConversations(chats.data);
 
         const saved = localStorage.getItem("chatUser");
@@ -151,8 +170,14 @@ export default function MessagesPage() {
           const user = JSON.parse(saved);
           await openChat(user);
         }
+      } catch {
+        if (!cancelled) {
+          setConversations([]);
+        }
       } finally {
-        setLoadingList(false);
+        if (!cancelled) {
+          setLoadingList(false);
+        }
       }
     };
 
@@ -214,6 +239,7 @@ export default function MessagesPage() {
     window.addEventListener("chat:messages-synced", onMessagesSynced);
 
     return () => {
+      cancelled = true;
       if (typingTimer.current) {
         clearTimeout(typingTimer.current);
       }
@@ -223,27 +249,11 @@ export default function MessagesPage() {
       unsubTyping();
       unsubOnline();
     };
-  }, []);
+  }, [openChat]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
-
-  const openChat = useCallback(async (user: any) => {
-    setChatUser(user);
-    chatUserRef.current = user;
-    setLoadingChat(true);
-    localStorage.setItem("chatUser", JSON.stringify(user));
-    emitChatUserChanged(user);
-
-    try {
-      const res = await API.get(`/chat/${user.id}`);
-      setMessages(res.data);
-      emitChatMessagesSynced(user.id, res.data);
-    } finally {
-      setLoadingChat(false);
-    }
-  }, []);
 
   const send = async () => {
     if (!text.trim() || !chatUser) return;

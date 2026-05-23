@@ -387,7 +387,7 @@ export default function FloatingMessenger() {
               <div className="relative shrink-0">
                 <img
                   src={avatarUrl}
-                  alt=""
+                  alt={`${chatUser.username}'s avatar`}
                   className="size-10 rounded-full object-cover ring-2 ring-background"
                 />
                 <span

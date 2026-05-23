@@ -40,18 +40,22 @@ export default function ExplorePage() {
   const [tags, setTags] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [tagsLoading, setTagsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   useEffect(() => {
     setPostsLoading(true);
+    setLoadError(false);
     API.get("/posts/explore")
       .then((res) => setPosts(res.data))
+      .catch(() => setLoadError(true))
       .finally(() => setPostsLoading(false));
 
     setTagsLoading(true);
     API.get("/posts/trending")
       .then((res) => setTags(res.data))
+      .catch(() => setTags([]))
       .finally(() => setTagsLoading(false));
   }, []);
 
@@ -105,6 +109,12 @@ export default function ExplorePage() {
           resultCount={filteredPosts.length}
           totalCount={posts.length}
         />
+
+        {loadError && (
+          <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            Could not load explore posts. Check your connection and try again.
+          </p>
+        )}
 
         {!postsLoading && filteredPosts.length === 0 ? (
           <ExploreEmptyState hasFilter={hasFilter} />

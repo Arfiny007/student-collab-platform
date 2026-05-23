@@ -41,6 +41,9 @@ export default function Dashboard() {
   const [loading, setLoading] =
     useState(false);
 
+  const [initialLoading, setInitialLoading] =
+    useState(true);
+
   const [hasMore, setHasMore] =
     useState(true);
 
@@ -78,10 +81,17 @@ export default function Dashboard() {
             ],
           );
         }
+      } catch {
+        if (page === 1) {
+          setHasMore(false);
+        }
       } finally {
         setLoading(
           false,
         );
+        if (page === 1) {
+          setInitialLoading(false);
+        }
       }
     };
 
@@ -90,27 +100,27 @@ export default function Dashboard() {
   }, [page]);
 
   useEffect(() => {
-    API.get(
-      "/users/stories",
-    ).then(
-      (
-        res,
-      ) =>
-        setStories(
-          res.data,
-        ),
-    );
+    let cancelled = false;
 
-    API.get(
-      "/users/suggested",
-    ).then(
-      (
-        res,
-      ) =>
-        setSuggested(
-          res.data,
-        ),
-    );
+    Promise.all([
+      API.get("/users/stories"),
+      API.get("/users/suggested"),
+    ])
+      .then(([storiesRes, suggestedRes]) => {
+        if (cancelled) return;
+        setStories(storiesRes.data);
+        setSuggested(suggestedRes.data);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStories([]);
+          setSuggested([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -193,14 +203,14 @@ export default function Dashboard() {
 
       <Sidebar />
 
-      <div className="flex-1 bg-gray-100 dark:bg-gray-950 min-h-screen">
+      <div className="flex-1 min-h-screen min-w-0 bg-gray-100 dark:bg-gray-950">
 
         <Navbar />
 
-        <div className="max-w-[1700px] mx-auto p-6 grid grid-cols-12 gap-8">
+        <div className="mx-auto grid max-w-[1700px] grid-cols-1 gap-6 p-4 sm:gap-8 sm:p-6 lg:grid-cols-12">
 
           {/* FEED */}
-          <div className="col-span-8">
+          <div className="min-w-0 lg:col-span-8">
 
             {/* STORIES */}
             <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 shadow mb-6 flex gap-5 overflow-x-auto">
@@ -244,6 +254,7 @@ export default function Dashboard() {
                           story.user.id,
                         ) || DEFAULT_AVATAR
                       }
+                      alt={`${story.user.username}'s story`}
                       loading="lazy"
                       className="w-20 h-20 rounded-full border-4 border-pink-500 object-cover"
                     />
@@ -281,25 +292,25 @@ export default function Dashboard() {
               }
             />
 
-            {filtered.map(
-              (
-                post,
-              ) => (
-                <PostCard
-                  key={
-                    post.id
-                  }
-                  post={
-                    post
-                  }
-                />
-              ),
+            {initialLoading && (
+              <PostCard loading />
+            )}
+
+            {!initialLoading &&
+              filtered.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+
+            {loading && !initialLoading && (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                Loading more posts…
+              </p>
             )}
 
           </div>
 
           {/* RIGHT */}
-          <div className="col-span-4 space-y-6">
+          <div className="min-w-0 space-y-6 lg:col-span-4">
 
             <TrendingTags />
 
@@ -327,6 +338,7 @@ export default function Dashboard() {
                           user.id,
                         ) || DEFAULT_AVATAR
                       }
+                      alt={`${user.username}'s avatar`}
                       loading="lazy"
                       className="w-14 h-14 rounded-full object-cover"
                     />
@@ -400,7 +412,8 @@ export default function Dashboard() {
 
             <img
               src={getMediaUrl(selectedStory.media) || ""}
-              className="max-h-[90vh] rounded-3xl"
+              alt={`Story by ${selectedStory.user?.username ?? "user"}`}
+              className="max-h-[90vh] max-w-[min(100vw-2rem,42rem)] rounded-3xl object-contain"
             />
 
           </div>

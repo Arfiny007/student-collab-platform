@@ -30,6 +30,8 @@ import {
   RolesGuard,
 } from "./roles.guard";
 
+import { getJwtSecret } from "../config/jwt.config";
+
 @Module({
   imports: [
     UserModule,
@@ -37,10 +39,7 @@ import {
     PassportModule,
 
     JwtModule.register({
-      secret:
-        process.env
-          .JWT_SECRET ||
-        "supersecret",
+      secret: getJwtSecret(),
 
       signOptions: {
         expiresIn:

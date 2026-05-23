@@ -52,10 +52,20 @@ async function bootstrap() {
 
   const clientUrl = process.env.CLIENT_URL;
   const allowedOrigins = clientUrl
-    ? clientUrl.split(",").map((o) => o.trim())
+    ? clientUrl.split(",").map((o) => o.trim()).filter(Boolean)
     : [];
 
- /* app.enableCors({
+  if (
+    process.env.NODE_ENV === "production" &&
+    allowedOrigins.length === 0
+  ) {
+    logger.error(
+      "CLIENT_URL must list allowed browser origins in production",
+    );
+    process.exit(1);
+  }
+
+  app.enableCors({
     origin: (origin, callback) => {
       if (!origin || allowedOrigins.length === 0) {
         callback(null, true);
@@ -67,10 +77,6 @@ async function bootstrap() {
       }
       callback(null, false);
     },
-    credentials: true,
-  });*/
-  app.enableCors({
-    origin: true,
     credentials: true,
   });
 

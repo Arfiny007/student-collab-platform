@@ -28,12 +28,18 @@ function filterSavedPosts(posts: any[], query: string) {
 export default function SavedPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     setLoading(true);
+    setLoadError(false);
     API.get("/users/saved")
       .then((res) => setPosts(res.data))
+      .catch(() => {
+        setPosts([]);
+        setLoadError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -81,6 +87,12 @@ export default function SavedPage() {
             resultCount={filteredPosts.length}
             totalCount={posts.length}
           />
+        )}
+
+        {loadError && (
+          <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            Could not load saved posts. Check your connection and try again.
+          </p>
         )}
 
         {!loading && posts.length === 0 ? (

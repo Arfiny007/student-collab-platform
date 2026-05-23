@@ -74,7 +74,7 @@ export default function StoriesBar() {
                   <div className="rounded-full bg-background p-[2px]">
                     <img
                       src={avatarSrc}
-                      alt=""
+                      alt={`${u.username}'s story`}
                       className="size-14 rounded-full object-cover sm:size-16"
                     />
                   </div>

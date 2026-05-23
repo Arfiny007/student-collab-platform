@@ -12,6 +12,7 @@ import {
 } from "passport-jwt";
 
 import { UserService } from "../modules/user/user.service";
+import { getJwtSecret } from "../config/jwt.config";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(
@@ -24,9 +25,7 @@ export class JwtStrategy extends PassportStrategy(
       jwtFromRequest:
         ExtractJwt.fromAuthHeaderAsBearerToken(),
 
-      secretOrKey:
-        process.env.JWT_SECRET ||
-        "supersecret",
+      secretOrKey: getJwtSecret(),
     });
   }
 
