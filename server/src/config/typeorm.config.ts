@@ -3,6 +3,7 @@ import { join } from "path";
 
 function parseDatabaseUrl(url: string) {
   const parsed = new URL(url);
+
   return {
     host: parsed.hostname,
     port: Number(parsed.port) || 5432,
@@ -26,7 +27,17 @@ const connection = databaseUrl
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: "postgres",
+
   ...connection,
+
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? {
+          rejectUnauthorized: false,
+        }
+      : false,
+
   synchronize: process.env.NODE_ENV !== "production",
+
   entities: [join(__dirname, "/../**/*.entity.{js,ts}")],
 };
