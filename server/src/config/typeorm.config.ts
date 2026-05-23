@@ -37,7 +37,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
         }
       : false,
 
-  synchronize: true,
+  synchronize: false,
 
   entities: [join(__dirname, "/../**/*.entity.{js,ts}")],
 };
