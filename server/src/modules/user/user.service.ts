@@ -191,25 +191,15 @@ export class UserService {
       throw new NotFoundException();
     }
 
-    if (
-      file
-    ) {
-      user.avatar =
-        file.filename;
+    if (file) {
+      user.avatar = file.filename;
     }
 
-    Object.assign(
-      user,
-      body,
-    );
+    Object.assign(user, body);
 
-    await this.userRepo.save(
-      user,
-    );
+    await this.userRepo.save(user);
 
-    return this.getProfile(
-      id,
-    );
+    return this.getProfile(id);
   }
 
   async createStory(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Briefcase,
   Camera,
@@ -10,13 +10,16 @@ import {
   User,
   X,
 } from "lucide-react";
+import { isAxiosError } from "axios";
+import toast from "react-hot-toast";
 import API from "../../../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import {
+  bumpAvatarCacheVersion,
+  getAvatarUrl,
+} from "@/lib/media";
 
 const FIELD_SECTIONS = [
   {
@@ -57,7 +60,52 @@ const FIELD_SECTIONS = [
       },
     ],
   },
-];
+] as const;
+
+const URL_FIELDS = new Set(["github", "linkedin", "portfolio"]);
+
+function buildProfileFormData(
+  form: Record<string, string>,
+  avatar: File | null,
+): FormData {
+  const formData = new FormData();
+
+  for (const [key, value] of Object.entries(form)) {
+    const trimmed = value.trim();
+    if (URL_FIELDS.has(key) && !trimmed) {
+      continue;
+    }
+    formData.append(key, trimmed);
+  }
+
+  if (avatar) {
+    formData.append("avatar", avatar);
+  }
+
+  return formData;
+}
+
+function getSaveErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    const data = error.response?.data as
+      | { message?: string | string[] }
+      | undefined;
+    const msg = data?.message;
+    if (Array.isArray(msg)) {
+      return msg.join(". ");
+    }
+    if (typeof msg === "string") {
+      return msg;
+    }
+    if (error.response?.status === 401) {
+      return "Session expired. Please sign in again.";
+    }
+    if (error.code === "ERR_NETWORK") {
+      return "Network error. Check your connection and try again.";
+    }
+  }
+  return "Could not save profile. Please try again.";
+}
 
 export default function EditProfileModal({
   user,
@@ -66,9 +114,12 @@ export default function EditProfileModal({
 }: {
   user: Record<string, string | number | null | undefined>;
   onClose: () => void;
-  refresh: () => void;
+  refresh: () => void | Promise<void>;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewBlobRef = useRef<string | null>(null);
+  const saveInFlightRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const [form, setForm] = useState({
     username: String(user.username || ""),
@@ -84,32 +135,86 @@ export default function EditProfileModal({
 
   const [avatar, setAvatar] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(
-    user.avatar ? `${API_BASE}/${user.avatar}` : null,
+    getAvatarUrl(
+      String(user.avatar || ""),
+      user.id ?? undefined,
+    ) || null,
   );
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (previewBlobRef.current) {
+        URL.revokeObjectURL(previewBlobRef.current);
+        previewBlobRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleClose = () => {
+    if (saveInFlightRef.current) {
+      return;
+    }
+    onClose();
+  };
 
   const update = async () => {
+    if (saveInFlightRef.current || saving) {
+      return;
+    }
+
+    const trimmedUsername = form.username.trim();
+    if (!trimmedUsername) {
+      setError("Username is required.");
+      return;
+    }
+
+    saveInFlightRef.current = true;
     setSaving(true);
+    setError(null);
+
     try {
-      const formData = new FormData();
-      Object.entries(form).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-      if (avatar) {
-        formData.append("avatar", avatar);
-      }
+      const formData = buildProfileFormData(
+        { ...form, username: trimmedUsername },
+        avatar,
+      );
+
       await API.patch("/users/me", formData);
-      refresh();
-      onClose();
+
+      bumpAvatarCacheVersion();
+
+      try {
+        await Promise.resolve(refresh());
+      } catch {
+        toast.error(
+          "Profile saved, but the page could not refresh. Reload if data looks stale.",
+        );
+      }
+
+      if (mountedRef.current) {
+        onClose();
+      }
+    } catch (err) {
+      const message = getSaveErrorMessage(err);
+      if (mountedRef.current) {
+        setError(message);
+      }
+      toast.error(message);
     } finally {
-      setSaving(false);
+      saveInFlightRef.current = false;
+      if (mountedRef.current) {
+        setSaving(false);
+      }
     }
   };
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in"
-      onClick={onClose}
+      onClick={handleClose}
       role="presentation"
     >
       <div
@@ -130,7 +235,8 @@ export default function EditProfileModal({
             type="button"
             variant="ghost"
             size="icon-sm"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={saving}
             aria-label="Close edit profile"
           >
             <X className="size-4" />
@@ -138,15 +244,26 @@ export default function EditProfileModal({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
+          {error && (
+            <p
+              role="alert"
+              className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
+
           <div className="mb-6 flex flex-col items-center gap-3">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
+              disabled={saving}
               className={cn(
                 "group relative size-24 overflow-hidden rounded-full ring-2 ring-border/80",
                 "transition-[transform,box-shadow] duration-[var(--duration-fast)]",
                 "hover:ring-primary/50 active:scale-[0.98]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "disabled:pointer-events-none disabled:opacity-60",
               )}
               aria-label="Change profile photo"
             >
@@ -175,11 +292,18 @@ export default function EditProfileModal({
               type="file"
               accept="image/*"
               className="sr-only"
+              disabled={saving}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
+                if (previewBlobRef.current) {
+                  URL.revokeObjectURL(previewBlobRef.current);
+                }
+                const blobUrl = URL.createObjectURL(file);
+                previewBlobRef.current = blobUrl;
                 setAvatar(file);
-                setPreview(URL.createObjectURL(file));
+                setPreview(blobUrl);
+                setError(null);
               }}
             />
             <p className="text-caption text-muted-foreground">
@@ -211,13 +335,15 @@ export default function EditProfileModal({
                       {field.type === "textarea" ? (
                         <textarea
                           id={`profile-${field.key}`}
-                          value={form[field.key as keyof typeof form]}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
+                          value={form[field.key]}
+                          disabled={saving}
+                          onChange={(e) => {
+                            setError(null);
+                            setForm((prev) => ({
+                              ...prev,
                               [field.key]: e.target.value,
-                            })
-                          }
+                            }));
+                          }}
                           rows={3}
                           placeholder="Tell the community about yourself…"
                           className={cn(
@@ -226,19 +352,22 @@ export default function EditProfileModal({
                             "transition-[border-color,box-shadow] duration-200",
                             "placeholder:text-muted-foreground",
                             "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40",
+                            "disabled:cursor-not-allowed disabled:opacity-60",
                           )}
                         />
                       ) : (
                         <Input
                           id={`profile-${field.key}`}
                           type={field.type}
-                          value={form[field.key as keyof typeof form]}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
+                          value={form[field.key]}
+                          disabled={saving}
+                          onChange={(e) => {
+                            setError(null);
+                            setForm((prev) => ({
+                              ...prev,
                               [field.key]: e.target.value,
-                            })
-                          }
+                            }));
+                          }}
                           placeholder={
                             "placeholder" in field
                               ? field.placeholder
@@ -255,7 +384,12 @@ export default function EditProfileModal({
         </div>
 
         <div className="flex justify-end gap-2 border-t border-border/60 px-6 py-4">
-          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button

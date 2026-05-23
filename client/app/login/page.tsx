@@ -43,12 +43,8 @@ export default function Login() {
       const res = await API.post("/auth/login", { email, password });
 
       const token = res.data.access_token;
-
-      localStorage.setItem("token", token);
-
       const payload = JSON.parse(atob(token.split(".")[1]));
       localStorage.setItem("userId", payload.sub);
-
       login(token);
 
       router.push("/dashboard");

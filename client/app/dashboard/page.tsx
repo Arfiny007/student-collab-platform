@@ -13,6 +13,8 @@ import PostCard from "./components/PostCard";
 import CreatePostModal from "./components/CreatePostModal";
 import SearchBar from "./components/SearchBar";
 import TrendingTags from "./components/TrendingTags";
+import { getAvatarUrl, getMediaUrl } from "@/lib/media";
+import { DEFAULT_AVATAR } from "@/lib/media";
 
 export default function Dashboard() {
   const [posts, setPosts] =
@@ -236,7 +238,13 @@ export default function Dashboard() {
                   >
 
                     <img
-                      src={`http://localhost:5000/${story.user.avatar}`}
+                      src={
+                        getAvatarUrl(
+                          story.user.avatar,
+                          story.user.id,
+                        ) || DEFAULT_AVATAR
+                      }
+                      loading="lazy"
                       className="w-20 h-20 rounded-full border-4 border-pink-500 object-cover"
                     />
 
@@ -314,10 +322,12 @@ export default function Dashboard() {
 
                     <img
                       src={
-                        user.avatar
-                          ? `http://localhost:5000/${user.avatar}`
-                          : "https://placehold.co/50"
+                        getAvatarUrl(
+                          user.avatar,
+                          user.id,
+                        ) || DEFAULT_AVATAR
                       }
+                      loading="lazy"
                       className="w-14 h-14 rounded-full object-cover"
                     />
 
@@ -389,7 +399,7 @@ export default function Dashboard() {
           >
 
             <img
-              src={`http://localhost:5000/${selectedStory.media}`}
+              src={getMediaUrl(selectedStory.media) || ""}
               className="max-h-[90vh] rounded-3xl"
             />
 

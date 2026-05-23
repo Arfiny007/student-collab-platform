@@ -24,6 +24,7 @@ import {
 import {
   ChatService,
 } from "./chat.service";
+import { multerOptions } from "../config/multer.config";
 
 @Controller("chat")
 export class ChatController {
@@ -36,20 +37,7 @@ export class ChatController {
   )
   @Post(":id")
   @UseInterceptors(
-    FileInterceptor(
-      "file",
-      {
-        dest:
-          "./uploads",
-
-        limits: {
-          fileSize:
-            10 *
-            1024 *
-            1024,
-        },
-      },
-    ),
+    FileInterceptor("file", multerOptions),
   )
   async send(
     @Param("id")

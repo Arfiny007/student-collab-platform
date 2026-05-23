@@ -528,12 +528,18 @@ async findAll(
           isFollowing:
             !!isFollowing,
 
-          shareUrl:
-            `${
-              process.env
-                .FRONTEND_URL ||
-              "http://localhost:3000"
-            }/post/${post.id}`,
+          shareUrl: (() => {
+            const base = (
+              process.env.CLIENT_URL?.split(",")[0] ||
+              process.env.FRONTEND_URL ||
+              ""
+            )
+              .trim()
+              .replace(/\/+$/, "");
+            return base
+              ? `${base}/post/${post.id}`
+              : `/post/${post.id}`;
+          })(),
         };
       },
     ),

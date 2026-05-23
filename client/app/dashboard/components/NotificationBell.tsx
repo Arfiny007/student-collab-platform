@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -12,7 +13,10 @@ import {
 } from "lucide-react";
 
 import API from "../../../lib/api";
-import { getSocket } from "../../../lib/socket";
+import {
+  emitNotificationsMarkAll,
+  emitNotificationsMarkOne,
+} from "../../../lib/socket";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +30,10 @@ type Notification = {
 function formatBadgeCount(count: number) {
   if (count > 99) return "99+";
   return String(count);
+}
+
+function countUnread(list: Notification[]) {
+  return list.filter((n) => !n.isRead).length;
 }
 
 function NotificationSkeleton() {
@@ -47,53 +55,102 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await API.get("/notifications");
-        setNotifications(res.data);
-        setUnread(
-          res.data.filter((n: Notification) => !n.isRead).length,
-        );
-      } catch {
-        console.error("notification load failed");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const applyNotifications = useCallback((list: Notification[]) => {
+    setNotifications(list);
+    setUnread(countUnread(list));
+  }, []);
 
+  const load = useCallback(async () => {
+    try {
+      const res = await API.get("/notifications");
+      applyNotifications(res.data);
+    } catch {
+      console.error("notification load failed");
+    } finally {
+      setLoading(false);
+    }
+  }, [applyNotifications]);
+
+  useEffect(() => {
     load();
 
-    const socket = getSocket();
+    const onSocketNotification = (e: Event) => {
+      const message = (e as CustomEvent<string | { message?: string }>)
+        .detail;
+      const text =
+        typeof message === "string"
+          ? message
+          : message?.message ?? "New notification";
 
-    socket.on("notification", (msg: string) => {
-      setNotifications((prev) => [
-        {
-          id: Date.now(),
-          message: msg,
-          isRead: false,
-        },
-        ...prev,
-      ]);
-      setUnread((prev) => prev + 1);
-    });
+      setNotifications((prev) => {
+        const next = [
+          {
+            id: Date.now(),
+            message: text,
+            isRead: false,
+          },
+          ...prev,
+        ];
+        setUnread(countUnread(next));
+        return next;
+      });
+    };
+
+    const onMarkAll = () => {
+      setNotifications((prev) => {
+        const next = prev.map((n) => ({ ...n, isRead: true }));
+        setUnread(0);
+        return next;
+      });
+    };
+
+    const onMarkOne = (e: Event) => {
+      const { id } = (e as CustomEvent<{ id: number }>).detail;
+      setNotifications((prev) => {
+        const next = prev.map((n) =>
+          n.id === id ? { ...n, isRead: true } : n,
+        );
+        setUnread(countUnread(next));
+        return next;
+      });
+    };
+
+    const onRefresh = () => {
+      load();
+    };
+
+    window.addEventListener(
+      "socket:notification",
+      onSocketNotification,
+    );
+    window.addEventListener("notifications:mark-all", onMarkAll);
+    window.addEventListener("notifications:mark-one", onMarkOne);
+    window.addEventListener("notifications:refresh", onRefresh);
 
     return () => {
-      socket.off("notification");
+      window.removeEventListener(
+        "socket:notification",
+        onSocketNotification,
+      );
+      window.removeEventListener("notifications:mark-all", onMarkAll);
+      window.removeEventListener("notifications:mark-one", onMarkOne);
+      window.removeEventListener("notifications:refresh", onRefresh);
     };
-  }, []);
+  }, [load]);
 
   const markAsRead = async (id: number) => {
     try {
-      await API.patch(`/notifications/${id}`);
+      await API.patch(`/notifications/${id}/read`);
 
-      setNotifications((prev) =>
-        prev.map((n) =>
+      setNotifications((prev) => {
+        const next = prev.map((n) =>
           n.id === id ? { ...n, isRead: true } : n,
-        ),
-      );
+        );
+        setUnread(countUnread(next));
+        return next;
+      });
 
-      setUnread((prev) => Math.max(prev - 1, 0));
+      emitNotificationsMarkOne(id);
     } catch {
       console.error("mark notification read failed");
     }
@@ -102,10 +159,12 @@ export default function NotificationBell() {
   const markAllAsRead = async () => {
     try {
       await API.patch("/notifications/read-all");
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, isRead: true })),
-      );
-      setUnread(0);
+      setNotifications((prev) => {
+        const next = prev.map((n) => ({ ...n, isRead: true }));
+        setUnread(0);
+        return next;
+      });
+      emitNotificationsMarkAll();
     } catch {
       console.error("mark all notifications read failed");
     }

@@ -12,10 +12,15 @@ export class NotificationController {
     return this.notificationService.findUserNotifications(req.user.userId);
   }
 
- @UseGuards(JwtAuthGuard)
-@Patch(':id/read')
-markRead(@Param('id') id: string) {
-  return this.notificationService.markAsRead(Number(id));
-}
+  @UseGuards(JwtAuthGuard)
+  @Patch('read-all')
+  markAllRead(@Req() req) {
+    return this.notificationService.markAllAsRead(req.user.userId);
+  }
 
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/read')
+  markRead(@Param('id') id: string) {
+    return this.notificationService.markAsRead(Number(id));
+  }
 }

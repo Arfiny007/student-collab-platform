@@ -15,10 +15,11 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000";
+import {
+  DEFAULT_AVATAR,
+  getAvatarUrl,
+  getMediaUrl,
+} from "@/lib/media";
 
 const actionBtnClass = cn(
   "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl px-3",
@@ -168,9 +169,11 @@ export default function PostCard({
     }
   };
 
-  const avatarSrc = post.author?.avatar
-    ? `${API_BASE}/${post.author.avatar}`
-    : "https://placehold.co/100";
+  const avatarSrc =
+    getAvatarUrl(
+      post.author?.avatar,
+      post.author?.id,
+    ) || DEFAULT_AVATAR;
 
   return (
     <article
@@ -241,7 +244,8 @@ export default function PostCard({
       {post.image && (
         <div className="mb-4 overflow-hidden rounded-2xl border border-border/50">
           <img
-            src={`${API_BASE}/${post.image}`}
+            src={getMediaUrl(post.image) || ""}
+            loading="lazy"
             alt=""
             className="w-full object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out-expo)] hover:scale-[1.01]"
           />
@@ -250,7 +254,7 @@ export default function PostCard({
 
       {post.file && (
         <a
-          href={`${API_BASE}/${post.file}`}
+          href={getMediaUrl(post.file) || "#"}
           target="_blank"
           rel="noopener noreferrer"
           className={cn(

@@ -4,10 +4,7 @@ import API from "../../../lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000";
+import { DEFAULT_AVATAR, getAvatarUrl } from "@/lib/media";
 
 const STORY_COUNT = 12;
 const SKELETON_COUNT = 10;
@@ -58,9 +55,8 @@ export default function StoriesBar() {
 
         {!loading &&
           users.map((u) => {
-            const avatarSrc = u.avatar
-              ? `${API_BASE}/${u.avatar}`
-              : "https://placehold.co/100";
+            const avatarSrc =
+              getAvatarUrl(u.avatar, u.id) || DEFAULT_AVATAR;
 
             return (
               <div

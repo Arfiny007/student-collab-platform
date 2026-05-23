@@ -2,6 +2,7 @@
 
 import "./globals.css";
 import { useEffect, useState, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "../context/AuthContext";
 import FloatingMessenger from "./dashboard/components/FloatingMessenger";
@@ -27,6 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const [dark, setDark] = useState(false);
+  const pathname = usePathname();
+  const hideMessenger = pathname?.startsWith("/messages");
 
   useEffect(() => {
     setDark(getIsDark());
@@ -46,6 +49,14 @@ export default function RootLayout({
       className={cn("font-sans", geist.variable)}
     >
       <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="description"
+          content="ClassCircle — premium educational collaboration for campuses, coaching centers, and study communities."
+        />
+        <meta name="theme-color" content="#4f46e5" />
+        <title>ClassCircle</title>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body
@@ -87,7 +98,7 @@ export default function RootLayout({
             )}
           </button>
 
-          <FloatingMessenger />
+          {!hideMessenger && <FloatingMessenger />}
         </AuthProvider>
       </body>
     </html>

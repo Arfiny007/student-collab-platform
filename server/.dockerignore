@@ -1,5 +1,7 @@
 node_modules
-.next
 dist
-.git
+uploads
 .env
+*.md
+coverage
+test

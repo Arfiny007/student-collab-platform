@@ -19,6 +19,9 @@ import {
 import { UserService } from "./user.service";
 
 import { JwtAuthGuard } from "../../auth/jwt-auth.guard";
+import { multerOptions } from "../../config/multer.config";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
 
 @Controller("users")
 export class UserController {
@@ -31,7 +34,7 @@ export class UserController {
   )
   register(
     @Body()
-    body: any,
+    body: CreateUserDto,
   ) {
     return this.userService.register(
       body,
@@ -60,19 +63,13 @@ export class UserController {
     "me",
   )
   @UseInterceptors(
-    FileInterceptor(
-      "avatar",
-      {
-        dest:
-          "./uploads",
-      },
-    ),
+    FileInterceptor("avatar", multerOptions),
   )
   update(
     @Req()
     req,
     @Body()
-    body: any,
+    body: UpdateUserDto,
     @UploadedFile()
     file?: Express.Multer.File,
   ) {
@@ -90,13 +87,7 @@ export class UserController {
     "story",
   )
   @UseInterceptors(
-    FileInterceptor(
-      "file",
-      {
-        dest:
-          "./uploads",
-      },
-    ),
+    FileInterceptor("file", multerOptions),
   )
   story(
     @Req()

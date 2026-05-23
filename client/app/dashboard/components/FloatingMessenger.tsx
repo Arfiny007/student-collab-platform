@@ -20,7 +20,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import API from "../../../lib/api";
-import { getSocket } from "../../../lib/socket";
+import {
+  appendUniqueMessage,
+  emitChatMessagesSynced,
+  emitChatUserChanged,
+  getSocket,
+  isMessageForChat,
+  subscribeSocketEvent,
+} from "../../../lib/socket";
+import {
+  DEFAULT_AVATAR,
+  getAvatarUrl,
+  getMediaUrl,
+} from "@/lib/media";
 
 const EMOJIS = ["❤️", "🔥", "😂", "👍", "🚀"];
 
@@ -67,8 +79,10 @@ function FilePreview({
   filePath: string;
   mine: boolean;
 }) {
-  const url = `${process.env.NEXT_PUBLIC_API_URL}/${filePath}`;
+  const url = getMediaUrl(filePath);
   const name = getFileName(filePath);
+
+  if (!url) return null;
 
   if (isImageFile(filePath)) {
     return (
@@ -133,8 +147,9 @@ export default function FloatingMessenger() {
   const [text, setText] = useState("");
   const [chatUser, setChatUser] = useState<any>(null);
   const [typing, setTyping] = useState(false);
-  const [socket, setSocket] = useState<any>(null);
   const [myId, setMyId] = useState(0);
+  const chatUserRef = useRef<any>(null);
+  const myIdRef = useRef(0);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     scrollRef.current?.scrollIntoView({ behavior });
@@ -155,48 +170,40 @@ export default function FloatingMessenger() {
   }, [messages, typing, scrollToBottom]);
 
   useEffect(() => {
-    let liveSocket: any;
+    chatUserRef.current = chatUser;
+  }, [chatUser]);
+
+  useEffect(() => {
+    myIdRef.current = myId;
+  }, [myId]);
+
+  const loadChat = useCallback(async (user: any, openPanel = false) => {
+    setChatUser(user);
+    chatUserRef.current = user;
+    localStorage.setItem("chatUser", JSON.stringify(user));
+    emitChatUserChanged(user);
+
+    const history = await API.get(`/chat/${user.id}`);
+    setMessages(history.data);
+    emitChatMessagesSynced(user.id, history.data);
+    if (openPanel) {
+      setOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const me = Number(localStorage.getItem("userId"));
+    setMyId(me);
+    myIdRef.current = me;
 
     const init = async () => {
       try {
-        const me = Number(localStorage.getItem("userId"));
-        setMyId(me);
-
         const saved = localStorage.getItem("chatUser");
         if (!saved) {
           return;
         }
-
         const user = JSON.parse(saved);
-        setChatUser(user);
-
-        const history = await API.get(`/chat/${user.id}`);
-        setMessages(history.data);
-
-        liveSocket = getSocket();
-
-        liveSocket.off("message");
-        liveSocket.off("typing");
-
-        liveSocket.on("message", (msg: any) => {
-          setMessages((prev) => {
-            const exists = prev.find((x) => x.id === msg.id);
-            if (exists) {
-              return prev;
-            }
-            return [...prev, msg];
-          });
-        });
-
-        liveSocket.on("typing", () => {
-          setTyping(true);
-          if (typingTimer.current) {
-            clearTimeout(typingTimer.current);
-          }
-          typingTimer.current = setTimeout(() => setTyping(false), 1000);
-        });
-
-        setSocket(liveSocket);
+        await loadChat(user);
       } catch (err) {
         console.error("chat init failed", err);
       }
@@ -210,42 +217,80 @@ export default function FloatingMessenger() {
         if (!saved) {
           return;
         }
-
         const user = JSON.parse(saved);
-        setChatUser(user);
-
-        const history = await API.get(`/chat/${user.id}`);
-        setMessages(history.data);
-        setOpen(true);
+        await loadChat(user, true);
       } catch (err) {
         console.error("open chat failed", err);
       }
     };
 
+    const onUserChanged = (e: Event) => {
+      const user = (e as CustomEvent).detail;
+      if (!user?.id) return;
+      setChatUser(user);
+      chatUserRef.current = user;
+    };
+
+    const onMessagesSynced = (e: Event) => {
+      const { userId, messages } = (e as CustomEvent).detail ?? {};
+      const active = chatUserRef.current;
+      if (!active || active.id !== userId) return;
+      setMessages(messages);
+    };
+
+    const unsubMessage = subscribeSocketEvent("message", (msg) => {
+      const message = msg as {
+        id: number;
+        sender?: { id?: number };
+        receiver?: { id?: number };
+      };
+      const active = chatUserRef.current;
+      if (
+        !active ||
+        !isMessageForChat(
+          message,
+          myIdRef.current,
+          active.id,
+        )
+      ) {
+        return;
+      }
+      setMessages((prev) =>
+        appendUniqueMessage(prev, message as (typeof prev)[0]),
+      );
+    });
+
+    const unsubTyping = subscribeSocketEvent("typing", () => {
+      if (!chatUserRef.current) return;
+      setTyping(true);
+      if (typingTimer.current) {
+        clearTimeout(typingTimer.current);
+      }
+      typingTimer.current = setTimeout(() => setTyping(false), 1000);
+    });
+
     window.addEventListener("open-chat", openChat);
+    window.addEventListener("chat:user-changed", onUserChanged);
+    window.addEventListener("chat:messages-synced", onMessagesSynced);
 
     return () => {
       if (typingTimer.current) {
         clearTimeout(typingTimer.current);
       }
       window.removeEventListener("open-chat", openChat);
-      liveSocket?.off("message");
-      liveSocket?.off("typing");
+      window.removeEventListener("chat:user-changed", onUserChanged);
+      window.removeEventListener("chat:messages-synced", onMessagesSynced);
+      unsubMessage();
+      unsubTyping();
     };
-  }, []);
+  }, [loadChat]);
 
   const send = async () => {
     if (!text.trim()) return;
 
     const res = await API.post(`/chat/${chatUser.id}`, { text });
 
-    setMessages((prev) => {
-      const exists = prev.find((x) => x.id === res.data.id);
-      if (exists) {
-        return prev;
-      }
-      return [...prev, res.data];
-    });
+    setMessages((prev) => appendUniqueMessage(prev, res.data));
 
     setText("");
   };
@@ -259,13 +304,7 @@ export default function FloatingMessenger() {
 
     const res = await API.post(`/chat/${chatUser.id}`, form);
 
-    setMessages((prev) => {
-      const exists = prev.find((x) => x.id === res.data.id);
-      if (exists) {
-        return prev;
-      }
-      return [...prev, res.data];
-    });
+    setMessages((prev) => appendUniqueMessage(prev, res.data));
 
     if (fileRef.current) {
       fileRef.current.value = "";
@@ -307,9 +346,8 @@ export default function FloatingMessenger() {
 
   if (!chatUser) return null;
 
-  const avatarUrl = chatUser.avatar
-    ? `${process.env.NEXT_PUBLIC_API_URL}/${chatUser.avatar}`
-    : "https://placehold.co/100";
+  const avatarUrl =
+    getAvatarUrl(chatUser.avatar, chatUser.id) || DEFAULT_AVATAR;
 
   return (
     <div className="fixed bottom-4 right-4 z-[999] sm:bottom-5 sm:right-5">
@@ -558,7 +596,7 @@ export default function FloatingMessenger() {
                 value={text}
                 onChange={(e) => {
                   setText(e.target.value);
-                  socket?.emit("typing", {
+                  getSocket()?.emit("typing", {
                     receiverId: chatUser.id,
                   });
                 }}

@@ -19,8 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import {
+  DEFAULT_AVATAR,
+  getAvatarUrl,
+} from "@/lib/media";
 
 type TabId = "overview" | "details" | "skills" | "links";
 
@@ -127,9 +129,8 @@ export default function ProfilePage() {
   const completed = fields.filter(Boolean).length;
   const completion = Math.round((completed / fields.length) * 100);
 
-  const avatarSrc = user.avatar
-    ? `${API_BASE}/${user.avatar}`
-    : "https://placehold.co/200";
+  const avatarSrc =
+    getAvatarUrl(user.avatar, user.id) || DEFAULT_AVATAR;
 
   const skillList = user.skills
     ? String(user.skills)

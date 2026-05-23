@@ -17,9 +17,11 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import {
+  DEFAULT_AVATAR,
+  getAvatarUrl,
+  getMediaUrl,
+} from "@/lib/media";
 
 type TabId = "posts" | "about";
 
@@ -153,8 +155,8 @@ function ConnectionModal({
               const u = getUser(item);
               const profileHref = u.id ? `/profile/${u.id}` : undefined;
               const avatarSrc = u.avatar
-                ? `${API_BASE}/${u.avatar}`
-                : "https://placehold.co/80";
+                ? getAvatarUrl(u.avatar, u.id) || DEFAULT_AVATAR
+                : DEFAULT_AVATAR;
 
               const row = (
                 <>
@@ -247,8 +249,8 @@ export default function PublicProfile() {
   }
 
   const avatarSrc = user.avatar
-    ? `${API_BASE}/${user.avatar}`
-    : "https://placehold.co/200";
+    ? getAvatarUrl(user.avatar, user.id) || DEFAULT_AVATAR
+    : DEFAULT_AVATAR;
 
   return (
     <div className="min-h-screen bg-background">
@@ -407,7 +409,8 @@ export default function PublicProfile() {
                       >
                         {post.image && (
                           <img
-                            src={`${API_BASE}/${post.image}`}
+                            src={getMediaUrl(post.image) || ""}
+                            loading="lazy"
                             alt=""
                             className="mb-3 aspect-video w-full rounded-xl object-cover"
                           />

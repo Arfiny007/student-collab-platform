@@ -1,661 +1,521 @@
-Production Engineering Report
-Version: v1.2-production-ready
-Architecture Type: Full-stack Modular SaaS Platform
-Codebase: Next.js + NestJS + PostgreSQL + Docker
+PRODUCTION ENGINEERING REPORT
+Version: v2.8-commercial-saas
+Architecture Type:
+
+Premium Full-Stack Modular SaaS Platform
+
+Codebase:
+Next.js 16
+React 19
+NestJS 11
+PostgreSQL
+Socket.IO
+Docker
+TypeORM
+TailwindCSS
 1. PROJECT OVERVIEW
-Name
-Primary Product
+Product Name
+Official Branding
+ClassCircle
+Product Type
 
-Student Collab Platform
+Premium Educational Collaboration SaaS Platform
 
-Recommended Commercial Branding
-CampusSphere Pro
-EduCollab Cloud
-StudyHub Premium
-CollabCampus
-MentorConnect SaaS
 Purpose
 
-A secure academic social collaboration platform designed for:
+ClassCircle is a realtime academic collaboration platform designed for:
 
-coaching centers
-schools
-universities
-mentoring organizations
+Coaching centers
+Schools
+Universities
+Mentoring organizations
+Online education communities
 
-Core objective:
-
-Replace:
+The platform replaces fragmented communication systems such as:
 
 WhatsApp groups
 Facebook groups
-Telegram study channels
+Telegram channels
+Discord study servers
 
-with:
+with a centralized, moderated, analytics-driven educational ecosystem.
 
-A private, moderated, analytics-driven educational ecosystem.
+2. CURRENT PRODUCT STATUS
+Current Stage
+Production Candidate / Deployable SaaS MVP
 
-Target Users
-Student
+The platform now includes:
 
-Use cases:
-
-discussion
-notes sharing
-mentorship
-polls
-stories
-private messaging
-Teacher
-
-Use cases:
-
-announcements
-assignments
-live polls
-community engagement
-Moderator
-
-Use cases:
-
-report review
-hide abusive content
-mute users
-community safety
-Admin
-
-Use cases:
-
-user management
-analytics
-moderation
-institution branding
-teacher provisioning
-Real-world Use Case
-
-Example:
-
-A coaching center with 3000 students.
-
-Flow:
-
-Teachers publish:
-
-notes
-polls
-quizzes
-
-Students:
-
-discuss
-ask questions
-private mentorship
-
-Admins:
-
-monitor engagement
-moderate activity
-export analytics
-
-Business model:
-
-B2B SaaS licensing.
-
-Reference baseline from previous report.
-
-2. SYSTEM ARCHITECTURE
+Premium commercial UI system
+Admin dashboard
+Realtime chat
+Notifications
+Role-based access control
+Analytics
+Moderation tools
+Responsive mobile-first UI
+Dockerized architecture
+Deployment-ready structure
+3. SYSTEM ARCHITECTURE
 High-Level Architecture
-┌─────────────────────────────┐
-│         Next.js UI         │
-│ React + Tailwind + Socket  │
-└──────────────┬──────────────┘
-               │
-       REST + WebSocket
-               │
-               ▼
-┌─────────────────────────────┐
-│         NestJS API         │
-│ Controllers + Services     │
-│ Guards + Gateways          │
-└──────────────┬──────────────┘
-               │
-             TypeORM
-               │
-               ▼
-┌─────────────────────────────┐
-│       PostgreSQL DB        │
-└─────────────────────────────┘
-Realtime Layer
-Frontend Shared Socket
-        ↕
-Socket.IO
-        ↕
+Next.js Frontend
+        │
+ REST + WebSocket
+        │
+NestJS Backend API
+        │
+     TypeORM
+        │
+ PostgreSQL Database
+Frontend Architecture
+Framework
+Next.js App Router
+React 19
+TypeScript
+UI System
+
+Premium SaaS design system inspired by:
+
+Linear
+Stripe Dashboard
+Discord
+Notion
+Framer
+Frontend Layers
+Presentation Layer
+
+Pages + Components
+
+State Layer
+React Context
+Local component state
+Communication Layer
+Axios API client
+Shared Socket.IO singleton
+UI Foundation
+
+Reusable design system:
+
+buttons
+cards
+badges
+inputs
+skeletons
+glass panels
+Backend Architecture
+Framework
+
+NestJS Modular Architecture
+
+Architectural Patterns
+Service Layer Pattern
+Repository Pattern
+Modular Pattern
+Gateway Pattern
+Singleton Socket Pattern
+Main Backend Modules
+auth/
+chat/
+notification/
+modules/
+  ├── user/
+  ├── post/
+  ├── comment/
+  ├── admin/
+Realtime Architecture
+Gateways
 ChatGateway
 NotificationGateway
-Data Flow
-Create Post
-UI Form
-→ Axios
-→ PostController
-→ PostService
-→ TypeORM
-→ PostgreSQL
-→ Response
-→ UI rerender
-Chat
-UI
-→ REST save
-→ DB save
-→ ChatGateway emit
-→ recipient UI
-Notification
-Backend event
-→ NotificationService save
-→ NotificationGateway emit
-→ Navbar realtime badge
-Design Patterns Used
-Modular Architecture
+Critical Socket Rooms
+chat-${userId}
+user-${userId}
 
-Nest modules:
+DO NOT CHANGE THESE ROOM NAMINGS.
 
-auth
-user
-post
-comment
-chat
-notification
-Repository Pattern
+Shared Frontend Socket
 
-TypeORM repositories.
-
-Service Layer Pattern
-
-Controllers delegate business logic.
-
-Gateway Pattern
-
-Socket.IO realtime.
-
-Shared Socket Singleton Pattern
-
-Frontend:
+File:
 
 client/lib/socket.ts
 
-Prevents duplicate socket connections.
+Purpose:
 
-3. TECH STACK
+Prevent duplicate socket connections
+Shared notifications + messaging socket
+Centralized realtime connection lifecycle
+4. TECH STACK
 Frontend
 Next.js 16
 React 19
 TypeScript
-TailwindCSS
+TailwindCSS v4
 Axios
 Socket.IO Client
 React Hot Toast
+Lucide React
 Backend
 NestJS 11
-TypeScript
-Passport
-JWT
+Passport JWT
 Socket.IO
 Multer
+TypeORM
+class-validator
+bcrypt
 Database
 PostgreSQL
-ORM
-TypeORM
 DevOps
 Docker
 Docker Compose
-CI/CD
+Planned Production Stack
+Vercel (frontend)
+Render (backend)
+Neon PostgreSQL (database)
+5. PREMIUM UI/UX SYSTEM
+Completed UI Overhaul
+Global Design System
 
-Status:
+Implemented:
 
-Missing.
-
-4. FULL FEATURE LIST
-Authentication
-
-Status: COMPLETE
-
-Features:
-
-register
-login
-JWT auth
-token expiry
-secure secret env
-
-Files:
-
-server/src/auth/*
-
-Dependencies:
-
-User module
-Profile Management
-
-Status: COMPLETE
-
-Features:
-
-avatar upload
-bio
-social links
-analytics
-
-Files:
-
-modules/user/*
-
-Dependencies:
-
-auth
-Social Feed
-
-Status: COMPLETE
-
-Features:
-
-create posts
-infinite scroll
-search
-trending
-save
-like
-follow
-
-Dependencies:
-
-auth
-notifications
-Polls
-
-Status: COMPLETE
-
-Stories
-
-Status: COMPLETE
-
-24h filtering.
-
-Notifications
-
-Status: COMPLETE
-
-Realtime + secure JWT socket.
-
-Chat
-
-Status: COMPLETE
-
-Features:
-
-realtime messaging
-typing
-online users
-seen
-file attachments
-pin
-archive
-edit
-delete
-reactions
-Moderation
-
-Status: COMPLETE
-
-Features:
-
-report posts
-hide posts
-RBAC Foundation
-
-Status: COMPLETE
-
-Enum roles:
-
+glassmorphism
+gradients
+shadows
+dark/light themes
+typography system
+animation tokens
+motion system
+accessibility improvements
+responsive layouts
+Shared UI Components
+components/ui/
+  button.tsx
+  card.tsx
+  input.tsx
+  badge.tsx
+  separator.tsx
+  skeleton.tsx
+6. FULL FEATURE STATUS
+Feature	Status
+Authentication	Complete
+JWT Auth	Complete
+Realtime Messaging	Complete
+Notifications	Complete
+Stories	Complete
+Polls	Complete
+Likes	Complete
+Saves	Complete
+Follows	Complete
+Explore Feed	Complete
+Analytics Dashboard	Complete
+Admin Dashboard	Complete
+Moderation Queue	Complete
+RBAC	Complete
+Responsive UI	Complete
+Dark Mode	Complete
+Docker Setup	Complete
+Production Hardening	In Progress
+Multi-Tenant SaaS	Missing
+Teacher Portal	Partial
+CI/CD	Missing
+Automated Tests	Missing
+7. ADMIN SYSTEM
+Roles
 user
 teacher
 moderator
 admin
-Admin Dashboard
+RBAC Status
 
-Status: MISSING
+Complete
 
-Backend ready.
+Admin Dashboard Features
 
-Frontend missing.
+Implemented:
 
-Teacher Mode
-
-Status: PARTIAL
-
-Role exists.
-
-UI missing.
-
-5. FOLDER STRUCTURE
-root/
-├── client/
-├── server/
-├── docker-compose.yml
-Client
-client/
-├── app/
-│   ├── dashboard/
-│   ├── profile/
-│   ├── messages/
-│   ├── analytics/
-│   ├── explore/
-│   └── saved/
-├── context/
-├── lib/
-│   ├── api.ts
-│   └── socket.ts
-
-Important components:
-
-Navbar
-Sidebar
-PostCard
+platform overview
+moderation queue
+analytics
+user management
+block/mute controls
+role management
+Moderator Permissions
+reports
+moderation
+analytics
+Admin Permissions
+all moderator permissions
+user management
+role editing
+8. FRONTEND PAGES
+Fully Upgraded Premium Pages
+Auth
+login
+register
+forgot password
+Dashboard
+premium feed
+stories
+trending
+responsive navigation
+Messaging
 FloatingMessenger
-Server
-server/src/
-├── auth/
-├── chat/
-├── notification/
-├── config/
-└── modules/
-6. DATABASE DESIGN
-User
+premium realtime chat UI
+Profiles
+private profile
+public profile
+edit profile modal
+Analytics
+engagement charts
+metrics cards
+Explore
+premium discovery feed
+Saved
+saved posts interface
+Admin
+overview
+users
+moderation
+analytics
+9. DATABASE DESIGN
+User Table
 
-Fields:
+Important fields:
 
-id PK
+id
 email
 password
-role enum
+role
 username
 avatar
 bio
-analytics fields
-Post
-
-Fields:
-
-id
-title
-content
-hidden
-reports
-authorId FK
-Comment
-
-Fields:
-
-id
-content
-reports
-hidden
-Message
-
-Fields:
-
+skills
+github
+linkedin
+portfolio
+isBlocked
+isMuted
+profileViews
+engagementScore
+Message Table
 id
 text
 file
 reaction
 seen
+delivered
+edited
+deleted
 pinned
 archived
 senderId
 receiverId
-Notification
-
-Fields:
-
+createdAt
+Post Table
 id
-message
-isRead
+title
+content
+likes
+views
+image
+file
+authorId
 Other Tables
-Like
-Save
+Notification
+Story
 Poll
 Vote
 Follow
-Story
-
-Reference original schema.
-
-7. API DESIGN (FULL)
-AUTH
-POST /users/register
-
-Body:
-
-{
-  "email": "string",
-  "password": "string",
-  "username": "string"
-}
-
-Responses:
-
-200, 400, 409
-
+Save
+Like
+Comment
+10. API STATUS
+Authentication
 POST /auth/login
-
-Response:
-
-{
-  "access_token": "jwt"
-}
-USER
+POST /users/register
+Users
 GET /users/me
-
-Auth required.
-
 PATCH /users/me
-
-multipart:
-
-avatar
-bio
-skills
-links
-GET /users/search?q=
+GET /users/search
 GET /users/suggested
 GET /users/stories
 POST /users/story
-
-multipart.
-
 GET /users/saved
 GET /users/analytics
 GET /users/:id
 GET /users/:id/posts
-POSTS
+Posts
 POST /posts
-
-multipart.
-
-GET /posts?page=1
+GET /posts
 PATCH /posts/:id/toggle-like
 PATCH /posts/:id/save
 POST /posts/vote/:id
 GET /posts/explore
 GET /posts/trending
 PATCH /posts/:id/report
-
-NEW.
-
 PATCH /posts/:id/hide
-
-NEW.
-
-CHAT
+Chat
 GET /chat
 GET /chat/:id
 POST /chat/:id
-
-multipart.
-
 PATCH /chat/:id
 DELETE /chat/:id
 PATCH /chat/:id/react
 PATCH /chat/:id/pin
 PATCH /chat/:id/archive
-NOTIFICATIONS
+Notifications
 GET /notifications
 PATCH /notifications/:id
 PATCH /notifications/read-all
+Admin
+GET /admin/stats
+GET /admin/moderation/posts
+GET /admin/users
+PATCH /admin/users/:id
+11. CRITICAL LOGIC THAT MUST NEVER BREAK
+JWT Payload
 
-NEW.
+Current payload:
 
-Error codes
-400
-401
-404
-409
-413
-8. CURRENT IMPLEMENTATION STATUS
-Feature	Status
-Auth	Complete
-Profiles	Complete
-Feed	Complete
-Likes	Complete
-Saves	Complete
-Polls	Complete
-Stories	Complete
-Chat	Complete
-Notifications	Complete
-Analytics	Partial
-Moderation	Complete
-Teacher Mode	Partial
-Admin Dashboard	Missing
-SaaS Multi-Tenant	Missing
+{
+  sub: user.id,
+  email: user.email
+}
 
-9. CRITICAL LOGIC THAT MUST NOT BREAK
-JWT
-"If the JWT payload structure changes, the entire frontend authentication will break."
+DO NOT MODIFY.
 
-Socket Room Naming
-"Never change the naming conventions for chat-${userId} and user-${userId}."
+Socket Room Names
 
-Shared Socket
-"Do not disconnect the frontend global socket; otherwise, both notifications and chat will break."
+DO NOT CHANGE:
 
-Infinite Scroll
-"Changing the page + skip/take logic will result in a duplicate feed."
+chat-${userId}
+user-${userId}
+Shared Socket Lifecycle
 
-Story Expiry
-"If the 24-hour filtering logic is incorrect, stories will not expire."
+Do not disconnect global socket unexpectedly.
 
-10. DEPENDENCIES
-Backend
-@nestjs/common: 11
+It powers:
 
-@nestjs/core: 11
+notifications
+messaging
+realtime updates
+Feed Pagination
 
-typeorm: 0.3.x
+Current:
 
-pg: 8.x
+take + skip pagination
 
-bcrypt: 6
+Changing logic may duplicate feed entries.
 
-jsonwebtoken: 9
+12. CURRENT KNOWN ISSUES
+Avatar Cache Issue
 
-multer: 2
+Sometimes profile image does not refresh after switching accounts.
 
+Likely cause:
+
+browser image caching
+
+Planned fix:
+
+cache-busting query params
+unique filenames
+Messages Page
+
+FloatingMessenger upgraded.
+
+Full /messages page still needs premium redesign.
+
+13. PRODUCTION HARDENING STATUS
+Completed
+centralized API layer
+premium loading states
+skeleton loaders
+responsive layouts
+dark/light themes
+accessibility improvements
+In Progress
+Helmet hardening
+rate limiting
+environment cleanup
+Docker optimization
+production logging
+SEO metadata
+error boundaries
+14. DEPLOYMENT STRATEGY
+Recommended Free Stack
 Frontend
-next: 16
 
-react: 19
+Vercel
 
-axios: 1.x
-
-socket.io-client: 4.8.x
-
-(Reference previous dependency baseline).
-
-11. RUN INSTRUCTIONS
-Local
 Backend
-Bash
-cd server
-npm install
-npm run start:dev
+
+Render
+
+Database
+
+Neon
+
+15. ENVIRONMENT VARIABLES
 Frontend
-Bash
-cd client
-npm install
-npm run dev
-Docker
-Start
-Bash
-docker-compose up --build
-Stop
-Bash
-docker-compose down
-Production Build
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_SOCKET_URL=
 Backend
-Bash
-npm run build
-Frontend
-Bash
-npm run build
-12. RISKS / TECHNICAL DEBT
-Some service methods are still executing N+1 queries, which could lead to performance bottlenecks.
+DATABASE_URL=
+JWT_SECRET=
+PORT=
+CLIENT_URL=
+16. REMAINING PRIORITIES
+P1
 
-The keyword any is still being used in several places on the frontend, leaving the type safety incomplete.
+Production hardening
 
-The Admin UI has not been built yet—the Role-Based Access Control (RBAC) backend is ready, but the UI is missing.
+P2
 
-The analytics UI is basic and has not reached commercial dashboard quality yet.
+Messages page redesign
 
-There is no test coverage, presenting a regression risk.
+P3
 
-There is no CI/CD pipeline, creating manual deployment risks.
+Avatar cache fix
 
-Work on the multi-tenant architecture has not yet started.
+P4
 
-13. NEXT DEVELOPMENT PRIORITIES
-P1: Build Admin Interface
-User management
+Deployment
 
-Reports
+P5
 
-Moderation queue
-
-Teacher provisioning
-
-P2: Premium UI/UX Overhaul
-Motion design
-
-Dashboard redesign
-
-Mobile-first polish
-
-Accessibility
-
-P3: Teacher Portal
-Announcements
-
-Assignments
-
-Classes
-
-P4: Multi-tenant SaaS
-Institution isolation
-
-Custom branding
-
-P5: Production Operations
 CI/CD
 
-Monitoring
+P6
 
-Testing
+Automated testing
 
-Backups
+P7
+
+Teacher portal
+
+P8
+
+Multi-tenant SaaS architecture
+
+17. ENGINEERING ASSESSMENT
+
+Current platform quality level:
+
+Portfolio Quality
+
+Excellent
+
+Commercial Demo Quality
+
+Excellent
+
+Coaching Center SaaS Readiness
+
+Strong MVP
+
+Production Readiness
+
+Near Production Ready
+
+Architecture Quality
+
+Good modular architecture with scalable foundation

@@ -25,6 +25,7 @@ import {
 import {
   JwtAuthGuard,
 } from "../../auth/jwt-auth.guard";
+import { multerOptions } from "../../config/multer.config";
 
 @Controller(
   "posts",
@@ -77,20 +78,7 @@ export class PostController {
   )
   @HttpPost()
   @UseInterceptors(
-    FileInterceptor(
-      "file",
-      {
-        dest:
-          "./uploads",
-
-        limits: {
-          fileSize:
-            10 *
-            1024 *
-            1024,
-        },
-      },
-    ),
+    FileInterceptor("file", multerOptions),
   )
   async create(
     @UploadedFile()

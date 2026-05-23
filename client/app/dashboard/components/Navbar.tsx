@@ -1,15 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useRouter } from "next/navigation";
 import {
   Bell,
   CheckCheck,
   CircleDot,
+  LogOut,
   Menu,
   MessageCircle,
 } from "lucide-react";
 import API from "../../../lib/api";
-import { getSocket } from "../../../lib/socket";
+import { AuthContext } from "../../../context/AuthContext";
+import {
+  emitNotificationsMarkAll,
+  emitNotificationsMarkOne,
+} from "../../../lib/socket";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -25,44 +37,97 @@ function formatBadgeCount(count: number) {
   return String(count);
 }
 
+function countUnread(list: Notification[]) {
+  return list.filter((n) => !n.isRead).length;
+}
+
 export default function Navbar() {
+  const router = useRouter();
+  const { logout } = useContext(AuthContext);
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await API.get("/notifications");
-        setNotifications(res.data);
-        setUnread(
-          res.data.filter((n: Notification) => !n.isRead).length,
-        );
-      } catch {}
-    };
+  const applyNotifications = useCallback((list: Notification[]) => {
+    setNotifications(list);
+    setUnread(countUnread(list));
+  }, []);
 
+  const load = useCallback(async () => {
+    try {
+      const res = await API.get("/notifications");
+      applyNotifications(res.data);
+    } catch {}
+  }, [applyNotifications]);
+
+  useEffect(() => {
     load();
 
-    const socket = getSocket();
+    const onSocketNotification = (e: Event) => {
+      const message = (e as CustomEvent<string | { message?: string }>)
+        .detail;
+      const text =
+        typeof message === "string"
+          ? message
+          : message?.message ?? "New notification";
 
-    socket.on("notification", (msg: string) => {
-      setNotifications((prev) => [
-        {
-          id: Date.now(),
-          message: msg,
-          isRead: false,
-        },
-        ...prev,
-      ]);
-      setUnread((prev) => prev + 1);
-    });
+      setNotifications((prev) => {
+        const next = [
+          {
+            id: Date.now(),
+            message: text,
+            isRead: false,
+          },
+          ...prev,
+        ];
+        setUnread(countUnread(next));
+        return next;
+      });
+    };
+
+    const onMarkAll = () => {
+      setNotifications((prev) => {
+        const next = prev.map((n) => ({ ...n, isRead: true }));
+        setUnread(0);
+        return next;
+      });
+    };
+
+    const onMarkOne = (e: Event) => {
+      const { id } = (e as CustomEvent<{ id: number }>).detail;
+      setNotifications((prev) => {
+        const next = prev.map((n) =>
+          n.id === id ? { ...n, isRead: true } : n,
+        );
+        setUnread(countUnread(next));
+        return next;
+      });
+    };
+
+    const onRefresh = () => {
+      load();
+    };
+
+    window.addEventListener(
+      "socket:notification",
+      onSocketNotification,
+    );
+    window.addEventListener("notifications:mark-all", onMarkAll);
+    window.addEventListener("notifications:mark-one", onMarkOne);
+    window.addEventListener("notifications:refresh", onRefresh);
 
     return () => {
-      socket.off("notification");
+      window.removeEventListener(
+        "socket:notification",
+        onSocketNotification,
+      );
+      window.removeEventListener("notifications:mark-all", onMarkAll);
+      window.removeEventListener("notifications:mark-one", onMarkOne);
+      window.removeEventListener("notifications:refresh", onRefresh);
     };
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     if (!open) return;
@@ -92,26 +157,35 @@ export default function Navbar() {
 
   const markAsRead = async (id: number) => {
     try {
-      await API.patch(`/notifications/${id}`);
+      await API.patch(`/notifications/${id}/read`);
 
-      setNotifications((prev) =>
-        prev.map((n) =>
+      setNotifications((prev) => {
+        const next = prev.map((n) =>
           n.id === id ? { ...n, isRead: true } : n,
-        ),
-      );
+        );
+        setUnread(countUnread(next));
+        return next;
+      });
 
-      setUnread((prev) => Math.max(prev - 1, 0));
+      emitNotificationsMarkOne(id);
     } catch {}
   };
 
   const markAllAsRead = async () => {
     try {
       await API.patch("/notifications/read-all");
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, isRead: true })),
-      );
-      setUnread(0);
+      setNotifications((prev) => {
+        const next = prev.map((n) => ({ ...n, isRead: true }));
+        setUnread(0);
+        return next;
+      });
+      emitNotificationsMarkAll();
     } catch {}
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
   };
 
   const openChat = useCallback(() => {
@@ -164,6 +238,21 @@ export default function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 pr-14 sm:pr-16 lg:pr-20">
+          <Button
+            type="button"
+            variant="glass"
+            size="icon"
+            aria-label="Sign out"
+            onClick={handleLogout}
+            className="rounded-xl"
+          >
+            <LogOut
+              className="size-[1.125rem] text-foreground/90"
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+          </Button>
+
           <Button
             type="button"
             variant="glass"
@@ -255,7 +344,11 @@ export default function Navbar() {
                         key={n.id}
                         type="button"
                         role="menuitem"
-                        onClick={() => markAsRead(n.id)}
+                        onClick={() => {
+                          if (!n.isRead) {
+                            markAsRead(n.id);
+                          }
+                        }}
                         className={cn(
                           "w-full border-b border-border/60 px-4 py-3 text-left text-body",
                           "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
@@ -278,7 +371,7 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {notifications.length > 0 && (
+                {notifications.length > 0 && unread > 0 && (
                   <div className="border-t border-border/80 p-2">
                     <Button
                       type="button"
