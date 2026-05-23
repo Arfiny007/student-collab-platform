@@ -37,7 +37,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
         }
       : false,
 
-  synchronize: process.env.NODE_ENV !== "production",
+  synchronize: true,
 
   entities: [join(__dirname, "/../**/*.entity.{js,ts}")],
 };
