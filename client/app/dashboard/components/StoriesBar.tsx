@@ -1,61 +1,102 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
-
 import API from "../../../lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000";
+
+const STORY_COUNT = 12;
+const SKELETON_COUNT = 10;
+
+function StoryAvatarSkeleton() {
+  return (
+    <div className="flex w-[4.75rem] shrink-0 flex-col items-center gap-2 sm:w-[5.25rem]">
+      <Skeleton className="size-14 rounded-full sm:size-16" />
+      <Skeleton className="h-3 w-14 rounded-md" />
+    </div>
+  );
+}
 
 export default function StoriesBar() {
-  const [users, setUsers] =
-    useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get(
-      "/users/search?q=",
-    ).then(
-      (res) =>
-        setUsers(
-          res.data.slice(
-            0,
-            12,
-          ),
-        ),
-    );
+    setLoading(true);
+
+    API.get("/users/search?q=")
+      .then((res) =>
+        setUsers(res.data.slice(0, STORY_COUNT)),
+      )
+      .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-3xl p-5 shadow mb-6 overflow-x-auto">
+    <section
+      className={cn(
+        "glass-panel interactive-lift mb-6 overflow-hidden rounded-2xl border border-border/80 p-4 shadow-elevated sm:rounded-3xl sm:p-5",
+      )}
+      aria-busy={loading}
+      aria-label="Stories"
+    >
+      <h2 className="text-title mb-4 px-0.5 text-foreground">Stories</h2>
 
-      <div className="flex gap-5">
-
-        {users.map(
-          (u) => (
-            <div
-              key={u.id}
-              className="flex flex-col items-center min-w-[70px]"
-            >
-
-              <img
-                src={
-                  u.avatar
-                    ? `${process.env.NEXT_PUBLIC_API_URL}/${u.avatar}`
-                    : "https://placehold.co/100"
-                }
-                className="w-16 h-16 rounded-full ring-4 ring-purple-500 object-cover"
-              />
-
-              <p className="text-xs mt-2 truncate max-w-[70px]">
-                {u.username}
-              </p>
-
-            </div>
-          ),
+      <div
+        className={cn(
+          "flex gap-4 overflow-x-auto pb-1",
+          "[scrollbar-width:thin] [-webkit-overflow-scrolling:touch]",
         )}
+      >
+        {loading &&
+          Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+            <StoryAvatarSkeleton key={i} />
+          ))}
 
+        {!loading &&
+          users.map((u) => {
+            const avatarSrc = u.avatar
+              ? `${API_BASE}/${u.avatar}`
+              : "https://placehold.co/100";
+
+            return (
+              <div
+                key={u.id}
+                className="group flex w-[4.75rem] shrink-0 flex-col items-center sm:w-[5.25rem]"
+              >
+                <div
+                  className={cn(
+                    "relative rounded-full p-[3px]",
+                    "bg-gradient-brand",
+                    "transition-transform duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
+                    "group-hover:scale-105",
+                  )}
+                >
+                  <div className="rounded-full bg-background p-[2px]">
+                    <img
+                      src={avatarSrc}
+                      alt=""
+                      className="size-14 rounded-full object-cover sm:size-16"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-caption mt-2 max-w-[4.5rem] truncate text-center text-foreground sm:max-w-[5rem]">
+                  {u.username}
+                </p>
+              </div>
+            );
+          })}
+
+        {!loading && users.length === 0 && (
+          <p className="text-caption py-6 text-muted-foreground">
+            No stories to show right now.
+          </p>
+        )}
       </div>
-
-    </div>
+    </section>
   );
 }
