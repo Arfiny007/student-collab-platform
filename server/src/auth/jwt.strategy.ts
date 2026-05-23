@@ -11,11 +11,15 @@ import {
   Strategy,
 } from "passport-jwt";
 
+import { UserService } from "../modules/user/user.service";
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(
   Strategy,
 ) {
-  constructor() {
+  constructor(
+    private userService: UserService,
+  ) {
     super({
       jwtFromRequest:
         ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -32,12 +36,21 @@ export class JwtStrategy extends PassportStrategy(
       email: string;
     },
   ) {
+    const user =
+      await this.userService.findByEmail(
+        payload.email,
+      );
+
     return {
       userId:
         payload.sub,
 
       email:
         payload.email,
+
+      role:
+        user?.role ||
+        "user",
     };
   }
 }

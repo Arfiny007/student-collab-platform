@@ -42,6 +42,10 @@ import {
   ChatModule,
 } from "./chat/chat.module";
 
+import {
+  AdminModule,
+} from "./modules/admin/admin.module";
+
 @Module({
   imports: [
 
@@ -67,6 +71,8 @@ import {
     FollowModule,
 
     ChatModule,
+
+    AdminModule,
 
   ],
 })
