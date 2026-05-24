@@ -20,7 +20,7 @@ export default function AuthShell({
   title,
   subtitle,
   footer,
-  brandingTitle = "CampusSphere",
+  brandingTitle = "ClassCircle",
   brandingDescription = "Connect, collaborate, and grow in a private academic community built for students and mentors.",
 }: AuthShellProps) {
   return (
