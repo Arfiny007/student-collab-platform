@@ -112,14 +112,6 @@ Frontend (client/.env.local)
 NEXT_PUBLIC_API_URL=https://student-collab-platform-50et.onrender.com
 NEXT_PUBLIC_SOCKET_URL=https://student-collab-platform-50et.onrender.com
 
-Backend (server/.env)
-NODE_ENV=production
-
-DATABASE_URL=postgresql://neondb_owner:npg_c9wns2XhmqVH@ep-rough-star-aoqw4son.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
-
-JWT_SECRET=classcircle-2026-random-string-secure
-
-CLIENT_URL=https://classcircle.vercel.app
 
 
 🚀 Local Development Setup

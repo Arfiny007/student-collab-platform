@@ -333,7 +333,7 @@ export default function PostCard({
           <span>{count}</span>
         </button>
 
-        <button
+        {/*<button
           type="button"
           onClick={() =>
             API.patch(`/posts/${post.id}/report`)
@@ -353,7 +353,7 @@ export default function PostCard({
           aria-label="Hide post"
         >
           <Eye className="size-4 shrink-0" aria-hidden />
-        </button>
+        </button>*/}
 
         <button type="button" onClick={toggleSave} className={actionBtnClass}>
           <Bookmark
@@ -373,31 +373,8 @@ export default function PostCard({
           <Siren className="size-4 shrink-0" aria-hidden />
         </button>
 
-        <button
-          type="button"
-          onClick={async () => {
-            const res = await API.patch(`/posts/${post.id}/save`);
+        
 
-            alert(res.data.saved ? "Saved" : "Unsaved");
-          }}
-          className={actionBtnClass}
-          aria-label="Save post with confirmation"
-        >
-          <Bookmark className="size-4 shrink-0" aria-hidden />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            navigator.clipboard.writeText(post.shareUrl);
-
-            alert("Link copied");
-          }}
-          className={actionBtnClass}
-          aria-label="Copy share link"
-        >
-          <Share2 className="size-4 shrink-0" aria-hidden />
-        </button>
       </div>
 
       <CommentSection postId={post.id} />
